@@ -34,7 +34,6 @@ import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Set as S
 
-import Data.Time.Calendar
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 

@@ -34,7 +34,6 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Internal
-import Data.Time.Clock
 import Data.Word
 import Numeric
 import Text.PrettyPrint.ANSI.Leijen
