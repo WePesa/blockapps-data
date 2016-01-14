@@ -20,13 +20,14 @@ module Blockchain.Data.BlockDB (
   putBlocks,
   rawTX2TX,
   tx2RawTXAndTime,
+  nextDifficulty
 ) where 
 
 import Database.Persist hiding (get)
 import qualified Database.Persist.Postgresql as SQL
 import qualified Database.Esqueleto as E
 
-
+import Data.Bits
 import qualified Data.ByteString as B
 
 import Data.List
@@ -40,6 +41,7 @@ import Data.Time.Clock.POSIX
 import Numeric
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
+import Blockchain.Constants
 import Blockchain.Data.Address
 import qualified Blockchain.Colors as CL
 
@@ -133,6 +135,23 @@ getBlock h = do
   where actions = E.select $ E.from $ \(bdRef, block) -> do
                                    E.where_ ( (bdRef E.^. BlockDataRefHash E.==. E.val h ) E.&&. ( bdRef E.^. BlockDataRefBlockId E.==. block E.^. BlockId ))
                                    return block                        
+
+nextDifficulty::Bool->Integer->Integer->UTCTime->UTCTime->Integer
+nextDifficulty useTestnet parentNumber oldDifficulty oldTime newTime =
+  (max nextDiff' minimumDifficulty) + if useTestnet then 0 else expAdjustment
+    where
+      nextDiff' = 
+          if round (utcTimeToPOSIXSeconds newTime) >=
+                 (round (utcTimeToPOSIXSeconds oldTime) + difficultyDurationLimit useTestnet::Integer)
+          then oldDifficulty - oldDifficulty `shiftR` difficultyAdjustment
+          else oldDifficulty + oldDifficulty `shiftR` difficultyAdjustment
+      periodCount = (parentNumber+1) `quot` difficultyExpDiffPeriod
+      expAdjustment =
+        if periodCount > 1
+        then 2^(periodCount - 2)
+        else 0
+
+
 
 getDifficulties::HasSQLDB m=>[SHA]->m [(SHA, Integer)]
 getDifficulties hashes = do
