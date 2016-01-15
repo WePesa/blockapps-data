@@ -99,12 +99,13 @@ calcTotalDifficulty b _ = do
           SQL.selectFirst [ BlockDataRefHash SQL.==. h ] [] -}
 
 blk2BlkDataRef :: (HasSQLDB m, MonadResource m) =>
-                  M.Map SHA Integer->(Block, SHA)->BlockId->m BlockDataRef
-blk2BlkDataRef dm (b, hash') blkId = do
+                  M.Map SHA Integer->(Block, SHA)->BlockId->Bool->m BlockDataRef
+blk2BlkDataRef dm (b, hash') blkId makeHashZero= do
   let difficulty = fromMaybe (error $ "missing value in difficulty map: " ++ format hash') $
                    M.lookup hash' dm --  <- calcTotalDifficulty b blkId
-  return (BlockDataRef pH uH cB sR tR rR lB d n gL gU t eD nc mH blkId hash' True True difficulty) --- Horrible! Apparently I need to learn the Lens library, yesterday
+  return (BlockDataRef pH uH cB sR tR rR lB d n gL gU t eD nc mH blkId hash'' True True difficulty) --- Horrible! Apparently I need to learn the Lens library, yesterday
   where
+      hash'' = if makeHashZero then SHA 0 else hash'
       bd = (blockBlockData b)
       pH = blockDataParentHash bd
       uH = blockDataUnclesHash bd
@@ -194,8 +195,8 @@ getDifficultyMap blocksAndHashes = do
 
 
 putBlocks::(HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
-           [Block]->m [(Key Block, Key BlockDataRef)]
-putBlocks blocks = do
+           [Block]->Bool->m [(Key Block, Key BlockDataRef)]
+putBlocks blocks makeHashZero = do
   let blocksAndHashes = map (\b -> (b, blockHash b)) blocks
   dm <- getDifficultyMap blocksAndHashes
   db <- getSQLDB
@@ -204,8 +205,8 @@ putBlocks blocks = do
     forM blocksAndHashes $ actions dm
       
   where actions dm (b, hash') = do
-          blkId <- SQL.insert $ b                      
-          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId
+          blkId <- SQL.insert $ b
+          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashZero
           time <- liftIO getCurrentTime
           mapM_ (insertOrUpdate b blkId) ((map (\tx -> txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time)  (blockReceiptTransactions b)))
           blkDataRefId <- SQL.insert $ toInsert
