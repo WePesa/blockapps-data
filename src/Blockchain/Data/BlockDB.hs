@@ -100,12 +100,12 @@ calcTotalDifficulty b _ = do
 
 blk2BlkDataRef :: (HasSQLDB m, MonadResource m) =>
                   M.Map SHA Integer->(Block, SHA)->BlockId->Bool->m BlockDataRef
-blk2BlkDataRef dm (b, hash') blkId makeHashZero= do
+blk2BlkDataRef dm (b, hash') blkId makeHashOne= do
   let difficulty = fromMaybe (error $ "missing value in difficulty map: " ++ format hash') $
                    M.lookup hash' dm --  <- calcTotalDifficulty b blkId
   return (BlockDataRef pH uH cB sR tR rR lB d n gL gU t eD nc mH blkId hash'' True True difficulty) --- Horrible! Apparently I need to learn the Lens library, yesterday
   where
-      hash'' = if makeHashZero then SHA 0 else hash'
+      hash'' = if makeHashOne then SHA 1 else hash'
       bd = (blockBlockData b)
       pH = blockDataParentHash bd
       uH = blockDataUnclesHash bd
@@ -196,7 +196,7 @@ getDifficultyMap blocksAndHashes = do
 
 putBlocks::(HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
            [Block]->Bool->m [(Key Block, Key BlockDataRef)]
-putBlocks blocks makeHashZero = do
+putBlocks blocks makeHashOne = do
   let blocksAndHashes = map (\b -> (b, blockHash b)) blocks
   dm <- getDifficultyMap blocksAndHashes
   db <- getSQLDB
@@ -206,7 +206,7 @@ putBlocks blocks makeHashZero = do
       
   where actions dm (b, hash') = do
           blkId <- SQL.insert $ b
-          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashZero
+          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
           time <- liftIO getCurrentTime
           mapM_ (insertOrUpdate b blkId) ((map (\tx -> txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time)  (blockReceiptTransactions b)))
           blkDataRefId <- SQL.insert $ toInsert
