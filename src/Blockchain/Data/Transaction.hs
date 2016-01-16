@@ -146,7 +146,7 @@ data Transaction =
     transactionR::Integer,
     transactionS::Integer,
     transactionV::Word8
-    } deriving (Show, Read, Eq, Generic)
+    } deriving (Show, Read, Eq, Ord, Generic)
 
 isMessageTX::Transaction->Bool
 isMessageTX MessageTX{} = True

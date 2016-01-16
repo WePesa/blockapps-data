@@ -7,7 +7,7 @@ import GHC.Generics
     
 import Blockchain.Data.RLP
        
-newtype Code = Code{codeBytes::B.ByteString} deriving (Show, Eq, Read, Generic)
+newtype Code = Code{codeBytes::B.ByteString} deriving (Show, Eq, Read, Ord, Generic)
 
 instance RLPSerializable Code where
     rlpEncode (Code bytes) = rlpEncode bytes
