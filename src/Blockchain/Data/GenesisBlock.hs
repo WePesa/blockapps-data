@@ -85,12 +85,12 @@ initializeGenesisBlock = do
   
   genesisBlock <- genesisInfoToGenesisBlock theJSON
   
-  [(_, genBlkId)] <- putBlocks [genesisBlock] False
+  [(genBId, genBDId)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
   let diffFromPair (addr', addrS) = CreateAddr addr' addrS
-  commitSqlDiffs genBlkId 0 $ map diffFromPair genAddrStates
+  commitSqlDiffs genBDId 0 $ map diffFromPair genAddrStates
 
-  putBestProcessedStateRoot (blockDataStateRoot $ blockBlockData genesisBlock) (blockDataNumber $ blockBlockData genesisBlock)
+  putBestBlockId genBId (blockDataNumber $ blockBlockData genesisBlock)
 
   return genesisBlock
 
