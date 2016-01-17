@@ -205,26 +205,39 @@ putBlocks blocks makeHashOne = do
     forM blocksAndHashes $ actions dm
       
   where actions dm (b, hash') = do
-          blkId <- SQL.insert $ b
-          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
-          time <- liftIO getCurrentTime
-          mapM_ (insertOrUpdate b blkId) ((map (\tx -> txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time)  (blockReceiptTransactions b)))
-          blkDataRefId <- SQL.insert $ toInsert
-          _ <- SQL.insert $ Unprocessed blkId
-          return $ (blkId, blkDataRefId)
+          liftIO $ putStrLn $ "checking if block with hash exists: " ++ format (blockHash b)
+          existingBlockData
+                 <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b]
+                                   [ ]
+          case existingBlockData of
+           [] -> do
+             liftIO $ putStrLn "block is new"
+             blkId <- SQL.insert $ b
+             toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
+             time <- liftIO getCurrentTime
+             forM_ (blockReceiptTransactions b) $ \tx -> do
+               let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
+               txID <- insertOrUpdate b blkId rawTX
+               SQL.insert $ BlockTransaction blkId txID
+             blkDataRefId <- SQL.insert $ toInsert
+             _ <- SQL.insert $ Unprocessed blkId
+             return (blkId, blkDataRefId)
+           [bd] -> do
+             liftIO $ putStrLn "block exists"
+             return (blockDataRefBlockId $ SQL.entityVal bd, SQL.entityKey bd)
 
         insertOrUpdate b blkid rawTX  = do
-            (txId :: [Entity RawTransaction])
+            (txs :: [Entity RawTransaction])
                  <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )]
                                    [ ]
-            case txId of
-                [] -> do
-                      _ <- SQL.insert rawTX
-                      return ()
-                lst -> mapM_ (\t -> SQL.update (SQL.entityKey t)
-                                              [ RawTransactionBlockId SQL.=. blkid, 
-                                                RawTransactionBlockNumber SQL.=. (fromIntegral $ blockDataNumber (blockBlockData b)) ])
-                             lst
+            case txs of
+                [] -> SQL.insert rawTX
+                [tx] -> do
+                  SQL.update (SQL.entityKey tx)
+                    [ RawTransactionBlockId SQL.=. blkid, 
+                      RawTransactionBlockNumber SQL.=. (fromIntegral $ blockDataNumber (blockBlockData b)) ]
+                  return $ SQL.entityKey tx
+                _ -> error "DB has multiple transactions with the same hash"
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =
