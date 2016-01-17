@@ -205,16 +205,26 @@ putBlocks blocks makeHashOne = do
     forM blocksAndHashes $ actions dm
       
   where actions dm (b, hash') = do
-          blkId <- SQL.insert $ b
-          toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
-          time <- liftIO getCurrentTime
-          forM_ (blockReceiptTransactions b) $ \tx -> do
-            let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
-            txID <- insertOrUpdate b blkId rawTX
-            SQL.insert $ BlockTransaction blkId txID
-          blkDataRefId <- SQL.insert $ toInsert
-          _ <- SQL.insert $ Unprocessed blkId
-          return $ (blkId, blkDataRefId)
+          liftIO $ putStrLn $ "checking if block with hash exists: " ++ format (blockHash b)
+          existingBlockData
+                 <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b]
+                                   [ ]
+          case existingBlockData of
+           [] -> do
+             liftIO $ putStrLn "block is new"
+             blkId <- SQL.insert $ b
+             toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
+             time <- liftIO getCurrentTime
+             forM_ (blockReceiptTransactions b) $ \tx -> do
+               let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
+               txID <- insertOrUpdate b blkId rawTX
+               SQL.insert $ BlockTransaction blkId txID
+             blkDataRefId <- SQL.insert $ toInsert
+             _ <- SQL.insert $ Unprocessed blkId
+             return (blkId, blkDataRefId)
+           [bd] -> do
+             liftIO $ putStrLn "block exists"
+             return (blockDataRefBlockId $ SQL.entityVal bd, SQL.entityKey bd)
 
         insertOrUpdate b blkid rawTX  = do
             (txs :: [Entity RawTransaction])
