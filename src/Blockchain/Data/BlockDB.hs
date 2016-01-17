@@ -208,23 +208,26 @@ putBlocks blocks makeHashOne = do
           blkId <- SQL.insert $ b
           toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
           time <- liftIO getCurrentTime
-          mapM_ (insertOrUpdate b blkId) ((map (\tx -> txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time)  (blockReceiptTransactions b)))
+          forM_ (blockReceiptTransactions b) $ \tx -> do
+            let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
+            txID <- insertOrUpdate b blkId rawTX
+            SQL.insert $ BlockTransaction blkId txID
           blkDataRefId <- SQL.insert $ toInsert
           _ <- SQL.insert $ Unprocessed blkId
           return $ (blkId, blkDataRefId)
 
         insertOrUpdate b blkid rawTX  = do
-            (txId :: [Entity RawTransaction])
+            (txs :: [Entity RawTransaction])
                  <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )]
                                    [ ]
-            case txId of
-                [] -> do
-                      _ <- SQL.insert rawTX
-                      return ()
-                lst -> mapM_ (\t -> SQL.update (SQL.entityKey t)
-                                              [ RawTransactionBlockId SQL.=. blkid, 
-                                                RawTransactionBlockNumber SQL.=. (fromIntegral $ blockDataNumber (blockBlockData b)) ])
-                             lst
+            case txs of
+                [] -> SQL.insert rawTX
+                [tx] -> do
+                  SQL.update (SQL.entityKey tx)
+                    [ RawTransactionBlockId SQL.=. blkid, 
+                      RawTransactionBlockNumber SQL.=. (fromIntegral $ blockDataNumber (blockBlockData b)) ]
+                  return $ SQL.entityKey tx
+                _ -> error "DB has multiple transactions with the same hash"
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =

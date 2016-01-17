@@ -45,6 +45,10 @@ Block
     blockUncles [BlockData]
     deriving Show Read Eq
 
+BlockTransaction
+    blockId BlockId
+    transaction RawTransactionId
+
 AddressState 
     nonce Integer sqltype=numeric(1000,0)
     balance Integer sqltype=numeric(1000,0)
