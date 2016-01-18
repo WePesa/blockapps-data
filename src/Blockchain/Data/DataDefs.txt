@@ -78,7 +78,6 @@ RawTransaction
     r Integer
     s Integer
     v Word8
-    blockId BlockId
     blockNumber Int
     txHash SHA
     deriving Show Read Eq    

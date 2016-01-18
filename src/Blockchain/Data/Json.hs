@@ -38,7 +38,7 @@ instance ToJSON Code
 {- note we keep the file MiscJSON around for the instances we don't want to export - ByteString, Point -}
 
 instance ToJSON RawTransaction' where
-    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v _ bn h) next) =
+    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h) next) =
         object ["next" .= next, "from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "to" .= showHex ta "" , "value" .= show val, "codeOrData" .= cod, 
         "r" .= showHex r "",
@@ -49,7 +49,7 @@ instance ToJSON RawTransaction' where
         "transactionType" .= (show $ rawTransactionSemantics rt),
         "timestamp" .= show t
                ]
-    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v _ bn h) next) =
+    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h) next) =
         object ["next" .= next, "from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "value" .= show val, "codeOrData" .= cod,
         "r" .= showHex r "",
@@ -76,14 +76,10 @@ instance FromJSON RawTransaction' where
       (tr :: Integer) <- fmap (fst . head . readHex) (t .: "r")
       (ts :: Integer) <- fmap (fst . head . readHex) (t .: "s")
       (tv :: Word8) <- fmap (fst . head . readHex) (t .: "v")
-      mbid <- (t .:? "blockId")
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
       time <- t .: "timestamp"
-      let bid = case mbid of
-            Just bd -> bd
-            Nothing -> 1 -- annoying, needs to be reset on update
-          bn = case mbn of
+      let bn = case mbn of
             Just b -> b
             Nothing -> -1
       
@@ -97,13 +93,12 @@ instance FromJSON RawTransaction' where
                                               (tr :: Integer)
                                               (ts :: Integer)
                                               (tv :: Word8)
-                                              (toSqlKey bid)
                                               bn
                                               h) "")
     parseJSON _ = error "bad param when calling parseJSON for RawTransaction'"
 
 instance ToJSON RawTransaction where
-    toJSON rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v _ bn h) =
+    toJSON rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h) =
         object ["from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "to" .= showHex ta "" , "value" .= show val, "codeOrData" .= cod, 
         "r" .= showHex r "",
@@ -114,7 +109,7 @@ instance ToJSON RawTransaction where
         "transactionType" .= (show $ rawTransactionSemantics rt),
         "timestamp" .= t
                ]
-    toJSON rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v _ bn h) =
+    toJSON rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h) =
         object ["from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "value" .= show val, "codeOrData" .= cod,
         "r" .= showHex r "",
@@ -141,14 +136,10 @@ instance FromJSON RawTransaction where
       (tr :: Integer) <- fmap (fst . head . readHex) (t .: "r")
       (ts :: Integer) <- fmap (fst . head . readHex) (t .: "s")
       (tv :: Word8) <- fmap (fst . head . readHex) (t .: "v")
-      mbid <- (t .:? "blockId")
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
       time <- t .: "timestamp"
-      let bid = case mbid of
-            Just bd -> bd
-            Nothing -> 1 -- annoying, needs to be reset on update
-          bn = case mbn of
+      let bn = case mbn of
             Just b -> b
             Nothing -> -1
       
@@ -162,7 +153,6 @@ instance FromJSON RawTransaction where
                                               (tr :: Integer)
                                               (ts :: Integer)
                                               (tv :: Word8)
-                                              (toSqlKey bid)
                                               bn
                                               h) 
     parseJSON _ = error "bad param when calling parseJSON for RawTransaction"
@@ -399,7 +389,7 @@ isAddr a = case a of
       Nothing  -> False
 
 rawTransactionSemantics :: RawTransaction -> TransactionType
-rawTransactionSemantics (RawTransaction _ _ _ _ _ ta _ cod _ _ _ _ _ _) = work
+rawTransactionSemantics (RawTransaction _ _ _ _ _ ta _ cod _ _ _ _ _) = work
      where work | (not (isAddr ta))  = Contract
                 | (isAddr ta) &&  ((B.length cod) > 0)        = FunctionCall
                 | otherwise = Transfer

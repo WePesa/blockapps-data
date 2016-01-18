@@ -80,7 +80,6 @@ oneTimeSetup = do
 
     rawExecute "CREATE INDEX CONCURRENTLY ON raw_transaction (from_address);" []
     rawExecute "CREATE INDEX CONCURRENTLY ON raw_transaction (to_address);" []
-    rawExecute "CREATE INDEX CONCURRENTLY ON raw_transaction (block_id);" []
     rawExecute "CREATE INDEX CONCURRENTLY ON raw_transaction (block_number);" [] 
     rawExecute "CREATE INDEX CONCURRENTLY ON raw_transaction (tx_hash);" [] 
 
