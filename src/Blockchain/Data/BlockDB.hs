@@ -66,19 +66,19 @@ rawTX2TX :: RawTransaction -> Transaction
 rawTX2TX (RawTransaction _ _ nonce gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce gp gl to val dat r s v)
 rawTX2TX (RawTransaction _ _ nonce gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce gp gl val (Code init') r s v)
 
-txAndTime2RawTX :: Transaction -> (Key Block) -> Integer -> UTCTime -> RawTransaction
-txAndTime2RawTX tx blkId blkNum time =
+txAndTime2RawTX :: Transaction -> Integer -> UTCTime -> RawTransaction
+txAndTime2RawTX tx blkNum time =
   case tx of
     (MessageTX nonce gp gl to val dat r s v) -> (RawTransaction time signer nonce gp gl (Just to) val dat r s v blkId (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
     (ContractCreationTX nonce gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce gp gl Nothing val init' r s v blkId (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
   where
     signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
-
+    blkId = E.toSqlKey 1 -- Fake value; RawTransactionBlockId is on its way out
 
 tx2RawTXAndTime :: (MonadIO m) => Transaction -> m RawTransaction
 tx2RawTXAndTime tx = do
   time <- liftIO getCurrentTime
-  return $ txAndTime2RawTX tx (E.toSqlKey 1) (-1) time
+  return $ txAndTime2RawTX tx (-1) time
 
 {-calcTotalDifficulty :: (HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
                        Block -> BlockId -> m Integer
@@ -216,7 +216,7 @@ putBlocks blocks makeHashOne = do
              toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
              time <- liftIO getCurrentTime
              forM_ (blockReceiptTransactions b) $ \tx -> do
-               let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
+               let rawTX = txAndTime2RawTX tx (blockDataNumber (blockBlockData b)) time
                txID <- insertOrUpdate b rawTX
                SQL.insert $ BlockTransaction blkId txID
              blkDataRefId <- SQL.insert $ toInsert
