@@ -63,17 +63,16 @@ import Control.Monad.Trans.Resource
 --import Debug.Trace
 
 rawTX2TX :: RawTransaction -> Transaction
-rawTX2TX (RawTransaction _ _ nonce gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce gp gl to val dat r s v)
-rawTX2TX (RawTransaction _ _ nonce gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce gp gl val (Code init') r s v)
+rawTX2TX (RawTransaction _ _ nonce gp gl (Just to) val dat r s v _ _) = (MessageTX nonce gp gl to val dat r s v)
+rawTX2TX (RawTransaction _ _ nonce gp gl Nothing val init' r s v _ _) = (ContractCreationTX nonce gp gl val (Code init') r s v)
 
 txAndTime2RawTX :: Transaction -> Integer -> UTCTime -> RawTransaction
 txAndTime2RawTX tx blkNum time =
   case tx of
-    (MessageTX nonce gp gl to val dat r s v) -> (RawTransaction time signer nonce gp gl (Just to) val dat r s v blkId (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
-    (ContractCreationTX nonce gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce gp gl Nothing val init' r s v blkId (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
+    (MessageTX nonce gp gl to val dat r s v) -> (RawTransaction time signer nonce gp gl (Just to) val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
+    (ContractCreationTX nonce gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx))
   where
     signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
-    blkId = E.toSqlKey 1 -- Fake value; RawTransactionBlockId is on its way out
 
 tx2RawTXAndTime :: (MonadIO m) => Transaction -> m RawTransaction
 tx2RawTXAndTime tx = do
