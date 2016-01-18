@@ -217,7 +217,7 @@ putBlocks blocks makeHashOne = do
              time <- liftIO getCurrentTime
              forM_ (blockReceiptTransactions b) $ \tx -> do
                let rawTX = txAndTime2RawTX tx blkId (blockDataNumber (blockBlockData b)) time
-               txID <- insertOrUpdate b blkId rawTX
+               txID <- insertOrUpdate b rawTX
                SQL.insert $ BlockTransaction blkId txID
              blkDataRefId <- SQL.insert $ toInsert
              _ <- SQL.insert $ Unprocessed blkId
@@ -225,17 +225,16 @@ putBlocks blocks makeHashOne = do
            [bd] -> do
              liftIO $ putStrLn "block exists"
              return (blockDataRefBlockId $ SQL.entityVal bd, SQL.entityKey bd)
+           _ -> error "DB has multiple blocks with the same hash"
 
-        insertOrUpdate b blkid rawTX  = do
+        insertOrUpdate b rawTX  = do
             (txs :: [Entity RawTransaction])
                  <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )]
                                    [ ]
             case txs of
                 [] -> SQL.insert rawTX
                 [tx] -> do
-                  SQL.update (SQL.entityKey tx)
-                    [ RawTransactionBlockId SQL.=. blkid, 
-                      RawTransactionBlockNumber SQL.=. (fromIntegral $ blockDataNumber (blockBlockData b)) ]
+                  SQL.update (SQL.entityKey tx) [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
                   return $ SQL.entityKey tx
                 _ -> error "DB has multiple transactions with the same hash"
 
