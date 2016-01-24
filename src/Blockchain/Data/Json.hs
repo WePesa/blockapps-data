@@ -17,6 +17,9 @@ import qualified Data.ByteString.Base16 as B16
 import Database.Persist.Postgresql
 import qualified Data.Text.Encoding as T
 
+import Data.Time.Calendar
+import Data.Time.Clock
+
 import qualified Data.ByteString as B
 
 import Numeric
@@ -78,7 +81,7 @@ instance FromJSON RawTransaction' where
       (tv :: Word8) <- fmap (fst . head . readHex) (t .: "v")
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
-      time <- t .: "timestamp"
+      time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
       let bn = case mbn of
             Just b -> b
             Nothing -> -1
@@ -138,7 +141,7 @@ instance FromJSON RawTransaction where
       (tv :: Word8) <- fmap (fst . head . readHex) (t .: "v")
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
-      time <- t .: "timestamp"
+      time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
       let bn = case mbn of
             Just b -> b
             Nothing -> -1
