@@ -68,6 +68,11 @@ instance AS.ToJSON Address where
   toJSON (Address x) = String $ T.pack $ padZeros 20 $ showHex x ""
          
 instance AS.FromJSON Address where
+-- TODO- put this tighter definition back in again....  I needed to loosten the definition because genesis.json breaks some of the format.
+--  parseJSON (String s)
+--    | not (all (`elem` ("abcdefABCDEF0123456789"::String)) $ T.unpack s) ||
+--      not (T.length s == 40) =
+--        error $ "error converting json to Address: " ++ show s
   parseJSON (String s) = pure $ Address $ fst $ head $ readHex $ T.unpack s
   parseJSON _ = mzero
    
