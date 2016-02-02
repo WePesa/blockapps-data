@@ -80,6 +80,7 @@ RawTransaction
     v Word8
     blockNumber Int
     txHash SHA
+    fromBlock Bool
     deriving Show Read Eq    
 
 NeededBlockHash
