@@ -67,9 +67,9 @@ instance ToJSON RawTransaction' where
 instance FromJSON RawTransaction' where
     parseJSON (Object t) = do
       fa <- fmap (fst . head . readHex) (t .: "from")
-      (tnon :: Int)  <- (t .: "nonce")
-      (tgp :: Int) <- (t .: "gasPrice")
-      (tgl :: Int) <- (t .: "gasLimit")
+      tnon  <- fmap read (t .: "nonce")
+      tgp <- fmap read (t .: "gasPrice")
+      tgl <- fmap read (t .: "gasLimit")
       tto <- (t .:? "to")
       let toFld = case tto of
             (Just str) -> fmap (Address . fst . head . readHex) str
@@ -87,9 +87,9 @@ instance FromJSON RawTransaction' where
             Nothing -> -1
       
       return (RawTransaction' (RawTransaction time (Address fa)
-                                              (fromIntegral tnon :: Integer)
-                                              (fromIntegral $ tgp :: Integer)
-                                              (fromIntegral $ tgl :: Integer)
+                                              (tnon :: Integer)
+                                              (tgp :: Integer)
+                                              (tgl :: Integer)
                                               (toFld :: Maybe Address)
                                               (tval :: Integer)
                                               (tcd :: B.ByteString)
