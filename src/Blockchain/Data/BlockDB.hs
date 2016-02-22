@@ -18,6 +18,7 @@ module Blockchain.Data.BlockDB (
   blockHash,
   getBlock,
   putBlocks,
+  putBlocksKafka,
   rawTX2TX,
   tx2RawTXAndTime,
   nextDifficulty
@@ -37,6 +38,9 @@ import qualified Data.Set as S
 
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
+
+import Network.Kafka
+import Network.Kafka.Producer
 
 import Numeric
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
@@ -236,6 +240,12 @@ putBlocks blocks makeHashOne = do
                   SQL.update (SQL.entityKey tx) [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
                   return $ SQL.entityKey tx
                 _ -> error "DB has multiple transactions with the same hash"
+
+putBlocksKafka::MonadIO m=>[Block]->m ()
+putBlocksKafka blocks = do
+  forM_ blocks $ \block -> do
+    result <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "thetopic" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    liftIO $ print result
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =

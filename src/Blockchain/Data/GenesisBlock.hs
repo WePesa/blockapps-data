@@ -84,7 +84,9 @@ initializeGenesisBlock = do
   let theJSON = either error id $ eitherDecode theJSONString
   
   genesisBlock <- genesisInfoToGenesisBlock theJSON
-  
+
+  putBlocksKafka [genesisBlock]
+                  
   [(genBId, genBDId)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
   let diffFromPair (addr', addrS) = CreateAddr addr' addrS

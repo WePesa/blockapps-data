@@ -38,6 +38,7 @@ library
                  , haskoin
                  , leveldb-haskell
                  , merkle-patricia-db
+                 , milena
                  , monad-logger
                  , mtl
                  , nibblestring
