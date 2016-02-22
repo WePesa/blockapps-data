@@ -21,36 +21,36 @@ library
     default-language: Haskell98
     build-depends: 
                    base >= 4 && < 5
+                 , aeson
                  , base16-bytestring
                  , binary
+                 , blockapps-util
                  , bytestring
                  , containers
+                 , crypto-pubkey-types
                  , cryptohash
                  , data-default
                  , directory
-                 , strato-conf
-                 , merkle-patricia-db
+                 , esqueleto
+                 , ethereum-encryption
                  , ethereum-rlp
                  , filepath
                  , haskoin
                  , leveldb-haskell
+                 , merkle-patricia-db
+                 , monad-logger
                  , mtl
                  , nibblestring
+                 , path-pieces
                  , persistent
-                 , persistent-template
                  , persistent-postgresql
+                 , persistent-template
                  , resourcet
+                 , strato-conf
+                 , text
                  , time
                  , transformers
                  , ansi-wl-pprint
-                 , monad-logger
-                 , aeson
-                 , text
-                 , path-pieces
-                 , ethereum-encryption
-                 , blockapps-util
-                 , esqueleto
-                 , crypto-pubkey-types
       		 
     exposed-modules: 
                    Blockchain.Constants
