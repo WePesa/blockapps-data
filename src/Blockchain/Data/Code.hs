@@ -6,8 +6,11 @@ import qualified Data.ByteString as B
 import GHC.Generics 
     
 import Blockchain.Data.RLP
+import Blockchain.ExtWord
        
-newtype Code = Code{codeBytes::B.ByteString} deriving (Show, Eq, Read, Ord, Generic)
+data Code =
+  Code{codeBytes::B.ByteString}
+  | PrecompiledCode Int deriving (Show, Eq, Read, Ord, Generic)
 
 instance RLPSerializable Code where
     rlpEncode (Code bytes) = rlpEncode bytes

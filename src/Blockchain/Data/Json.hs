@@ -41,7 +41,7 @@ instance ToJSON Code
 {- note we keep the file MiscJSON around for the instances we don't want to export - ByteString, Point -}
 
 instance ToJSON RawTransaction' where
-    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h) next) =
+    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h fb) next) =
         object ["next" .= next, "from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "to" .= showHex ta "" , "value" .= show val, "codeOrData" .= cod, 
         "r" .= showHex r "",
@@ -50,9 +50,10 @@ instance ToJSON RawTransaction' where
         "blockNumber" .= bn,
         "hash" .= h,
         "transactionType" .= (show $ rawTransactionSemantics rt),
-        "timestamp" .= show t
+        "timestamp" .= show t,
+        "fromBlock" .= show fb
                ]
-    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h) next) =
+    toJSON (RawTransaction' rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h fb) next) =
         object ["next" .= next, "from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "value" .= show val, "codeOrData" .= cod,
         "r" .= showHex r "",
@@ -61,7 +62,8 @@ instance ToJSON RawTransaction' where
         "blockNumber" .= bn,
         "hash" .= h,
         "transactionType" .= (show $ rawTransactionSemantics rt),
-        "timestamp" .= show t
+        "timestamp" .= show t,
+        "fromBlock" .= show fb
                ]
 
 instance FromJSON RawTransaction' where
@@ -82,6 +84,7 @@ instance FromJSON RawTransaction' where
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
       time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
+      fb <- t .: "fromBlock"
       let bn = case mbn of
             Just b -> b
             Nothing -> -1
@@ -97,11 +100,12 @@ instance FromJSON RawTransaction' where
                                               (ts :: Integer)
                                               (tv :: Word8)
                                               bn
-                                              h) "")
+                                              h
+                                              fb) "")
     parseJSON _ = error "bad param when calling parseJSON for RawTransaction'"
 
 instance ToJSON RawTransaction where
-    toJSON rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h) =
+    toJSON rt@(RawTransaction t (Address fa) non gp gl (Just (Address ta)) val cod r s v bn h fb) =
         object ["from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "to" .= showHex ta "" , "value" .= show val, "codeOrData" .= cod, 
         "r" .= showHex r "",
@@ -110,9 +114,10 @@ instance ToJSON RawTransaction where
         "blockNumber" .= bn,
         "hash" .= h,
         "transactionType" .= (show $ rawTransactionSemantics rt),
-        "timestamp" .= t
+        "timestamp" .= t,
+        "fromBlock" .= fb
                ]
-    toJSON rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h) =
+    toJSON rt@(RawTransaction t (Address fa) non gp gl Nothing val cod r s v bn h fb) =
         object ["from" .= showHex fa "", "nonce" .= non, "gasPrice" .= gp, "gasLimit" .= gl,
         "value" .= show val, "codeOrData" .= cod,
         "r" .= showHex r "",
@@ -121,7 +126,8 @@ instance ToJSON RawTransaction where
         "blockNumber" .= bn,
         "hash" .= h,
         "transactionType" .= (show $ rawTransactionSemantics rt),
-        "timestamp" .= t
+        "timestamp" .= t,
+        "fromBlock" .= fb
                ]
 
 instance FromJSON RawTransaction where
@@ -142,6 +148,7 @@ instance FromJSON RawTransaction where
       mbn <- (t .:? "blockNumber")
       h <- (t .: "hash")
       time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
+      fb <- t .: "fromBlock"
       let bn = case mbn of
             Just b -> b
             Nothing -> -1
@@ -157,7 +164,8 @@ instance FromJSON RawTransaction where
                                               (ts :: Integer)
                                               (tv :: Word8)
                                               bn
-                                              h) 
+                                              h
+                                              fb) 
     parseJSON _ = error "bad param when calling parseJSON for RawTransaction"
 
 rtToRtPrime :: (String , RawTransaction) -> RawTransaction'
@@ -392,7 +400,7 @@ isAddr a = case a of
       Nothing  -> False
 
 rawTransactionSemantics :: RawTransaction -> TransactionType
-rawTransactionSemantics (RawTransaction _ _ _ _ _ ta _ cod _ _ _ _ _) = work
+rawTransactionSemantics (RawTransaction _ _ _ _ _ ta _ cod _ _ _ _ _ _) = work
      where work | (not (isAddr ta))  = Contract
                 | (isAddr ta) &&  ((B.length cod) > 0)        = FunctionCall
                 | otherwise = Transfer
