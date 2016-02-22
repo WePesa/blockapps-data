@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, DeriveGeneric #-}
 
 module Blockchain.Data.DiffDB (
   sqlDiff,
@@ -27,7 +27,8 @@ import Control.Monad.State as ST hiding (state)
 import Control.Monad.Trans.Resource
 import qualified Data.NibbleString as N
 
-import Debug.Trace
+import Data.Aeson
+import GHC.Generics
 
 type SqlDbM m = SQL.SqlPersistT m
 
@@ -48,7 +49,9 @@ data AddrDiffOp =
   CreateAddr { addr :: Address, state :: AddressState } |
   DeleteAddr { addr :: Address } |
   UpdateAddr { addr :: Address, oldState :: AddressState, newState :: AddressState }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON AddrDiffOp
 
 addrDbDiff :: (HasStateDB m, HasHashDB m, MonadResource m)=>MPDB -> SHAPtr -> SHAPtr -> m [AddrDiffOp]
 addrDbDiff db ptr1 ptr2 = do
@@ -103,7 +106,7 @@ commitAddr blkDataId blkNum UpdateAddr{ addr = addr', oldState = addrS1, newStat
                       AddressStateRefLatestBlockDataRefNumber =. blkNum]
   db <- lift getStateDB
   storageDiff <- lift $ storageDbDiff db oldAddrStorage newAddrStorage
-  mapM_ (commitStorage addrID) (trace ("Address " ++ formatAddressWithoutColor addr' ++ ": " ++ show storageDiff) storageDiff)
+  mapM_ (commitStorage addrID) storageDiff
   where
     AddressState _ _ cr1 _ = addrS1
     oldAddrStorage = cr1
@@ -114,7 +117,9 @@ data StorageDiffOp =
   CreateStorage { key :: Word256, val :: Word256 } |
   DeleteStorage { key :: Word256 } |
   UpdateStorage { key :: Word256, oldVal :: Word256, newVal :: Word256 }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON StorageDiffOp
 
 storageDbDiff :: (HasHashDB m, MonadResource m)=>MPDB -> SHAPtr -> SHAPtr -> m [StorageDiffOp]
 storageDbDiff db ptr1 ptr2 = do
