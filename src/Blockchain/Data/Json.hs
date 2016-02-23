@@ -72,28 +72,22 @@ instance FromJSON RawTransaction' where
       tnon  <- fmap read (t .: "nonce")
       tgp <- fmap read (t .: "gasPrice")
       tgl <- fmap read (t .: "gasLimit")
-      tto <- (t .:? "to")
-      let toFld = case tto of
-            (Just str) -> fmap (Address . fst . head . readHex) str
-            Nothing -> Nothing
+      tto <- fmap (fmap $ Address . fst . head . readHex) (t .:? "to")
       tval <- fmap read (t .: "value")
       tcd <- fmap (fst .  B16.decode . T.encodeUtf8 ) (t .: "codeOrData")
       (tr :: Integer) <- fmap (fst . head . readHex) (t .: "r")
       (ts :: Integer) <- fmap (fst . head . readHex) (t .: "s")
       (tv :: Word8) <- fmap (fst . head . readHex) (t .: "v")
-      mbn <- (t .:? "blockNumber")
+      bn <- t .:? "blockNumber" .!= (-1)
       h <- (t .: "hash")
       time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
-      fb <- t .: "fromBlock"
-      let bn = case mbn of
-            Just b -> b
-            Nothing -> -1
+      fb <- t .:? "fromBlock" .!= False
       
       return (RawTransaction' (RawTransaction time (Address fa)
                                               (tnon :: Integer)
                                               (tgp :: Integer)
                                               (tgl :: Integer)
-                                              (toFld :: Maybe Address)
+                                              (tto :: Maybe Address)
                                               (tval :: Integer)
                                               (tcd :: B.ByteString)
                                               (tr :: Integer)
