@@ -245,7 +245,8 @@ putBlocksKafka::MonadIO m=>[Block]->m ()
 putBlocksKafka blocks = do
   forM_ blocks $ \block -> do
     result <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "thetopic" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
-    liftIO $ print result
+    --liftIO $ print result
+    return ()
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =
