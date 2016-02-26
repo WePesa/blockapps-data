@@ -1,5 +1,5 @@
 
-module Blockchain.Data.MemAddressStateDB (
+module Blockchain.DB.MemAddressStateDB (
   getAddressState,
   getAllAddressStates,
   putAddressState,

@@ -67,7 +67,6 @@ library
                    Blockchain.Data.Json
                    Blockchain.Data.Log
                    Blockchain.Data.LogDB
-                   Blockchain.Data.MemAddressStateDB
                    Blockchain.Data.PersistTypes
                    Blockchain.Data.UnprocessedDB
                    Blockchain.Data.RawTransaction
@@ -80,6 +79,7 @@ library
                    Blockchain.DB.CodeDB
                    Blockchain.DB.DetailsDB
                    Blockchain.DB.HashDB
+                   Blockchain.DB.MemAddressStateDB
                    Blockchain.DB.MemStorageDB
                    Blockchain.DB.SQLDB   
                    Blockchain.DB.StateDB
