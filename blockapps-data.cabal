@@ -74,6 +74,7 @@ library
                    Blockchain.Data.TransactionReceipt
                    Blockchain.Data.TransactionResult
                    Blockchain.DBM
+                   Blockchain.Data.StorageDB
                    Blockchain.DB.BlockDB
                    Blockchain.DB.CodeDB
                    Blockchain.DB.DetailsDB
@@ -81,7 +82,6 @@ library
                    Blockchain.DB.SQLDB   
                    Blockchain.DB.StateDB
                    Blockchain.DB.StorageDB
-                   Blockchain.ExtDBs
                    Blockchain.Setup
     ghc-options: -Wall -O2
     extensions: TemplateHaskell

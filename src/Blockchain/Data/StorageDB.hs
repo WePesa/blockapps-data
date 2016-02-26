@@ -1,5 +1,5 @@
 
-module Blockchain.ExtDBs (
+module Blockchain.Data.StorageDB (
   putStorageKeyVal',
   deleteStorageKey',
   getStorageKeyVal',
