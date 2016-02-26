@@ -1,14 +1,5 @@
 
 module Blockchain.ExtDBs (
-  MP.SHAPtr(..),
-  MP.emptyTriePtr,
-  stateDBPut,
-  stateDBGet,
-  putKeyVal,
-  getKeyVal,
-  getAllKeyVals,
-  keyExists,
-  deleteKey,
   putStorageKeyVal',
   deleteStorageKey',
   getStorageKeyVal',
@@ -31,50 +22,6 @@ import Blockchain.DB.StorageDB
 import qualified Blockchain.Database.MerklePatricia as MP
 import qualified Blockchain.Database.MerklePatricia.Internal as MP
 import Blockchain.ExtWord
-
-  
-stateDBPut::HasStateDB m=>B.ByteString->B.ByteString->m ()
-stateDBPut key val = do
-  db <- getStateDB
-  DB.put (MP.ldb db) def key val
-  setStateDBStateRoot $ MP.SHAPtr key
-
-stateDBGet::HasStateDB m=>B.ByteString->m (Maybe B.ByteString)
-stateDBGet key = do
-  db <- getStateDB
-  DB.get (MP.ldb db) def key
-
-putKeyVal::HasStateDB m=>N.NibbleString->RLPObject->m ()
-putKeyVal key val = do
-  db <- getStateDB
-  newStateDB <-
-    liftIO $ runResourceT $ MP.putKeyVal db key val
-  setStateDBStateRoot $ MP.stateRoot newStateDB
-
-getAllKeyVals::HasStateDB m=>m [(N.NibbleString, RLPObject)]
-getAllKeyVals = do
-  db <- getStateDB
-  MP.unsafeGetAllKeyVals db
-
-getKeyVal::HasStateDB m=>N.NibbleString -> m (Maybe RLPObject)
-getKeyVal key = do
-  db <- getStateDB
-  MP.getKeyVal db key
-
-deleteKey::HasStateDB m=>N.NibbleString->m ()
-deleteKey key = do
-  db <- getStateDB
-  newStateDB <-
-    MP.deleteKey db key
-  setStateDBStateRoot $ MP.stateRoot newStateDB
-
-keyExists::HasStateDB m=>N.NibbleString->m Bool
-keyExists key = do
-  db <- getStateDB
-  MP.keyExists db key
-
-----
-
 
 putStorageKeyVal'::(HasStorageDB m, HasStateDB m, HasHashDB m)=>
                   Address->Word256->Word256->m ()
