@@ -107,24 +107,6 @@ oneTimeSetup = do
       flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
         addCode B.empty --blank code is the default for Accounts, but gets added nowhere else.
         liftIO $ putStrLn $ CL.yellow ">>>> Initializing Genesis Block"
-        _ <- initializeGenesisBlock
-        genesisBlockId <- getGenesisBlockId
-        putUnprocessed [Unprocessed genesisBlockId]
+        initializeGenesisBlock
 
   return ()
-
-getGenesisBlockId::HasSQLDB m=>
-                   m (E.Key Block)
-getGenesisBlockId = do
-  ret <- sqlQuery $
-         E.select $
-         E.from $ \(bdRef `E.InnerJoin` block) -> do
-           E.on ( bdRef E.^. BlockDataRefBlockId E.==. block E.^. BlockId )
-           E.where_ (bdRef E.^. BlockDataRefNumber E.==. E.val 0 )
-           return $ block E.^. BlockId
-
-  case ret of
-    [] -> error "called getBlockIdFromBlock on a block that wasn't in the DB"
-    [blockId] -> return (E.unValue blockId)
-    _ -> error "called getBlockIdFromBlock on a block that appears more than once in the DB"
-

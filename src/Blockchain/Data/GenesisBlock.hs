@@ -19,6 +19,7 @@ import Blockchain.Data.BlockDB
 import Blockchain.Data.Extra
 import Blockchain.Data.GenesisInfo
 import Blockchain.Data.DiffDB
+import Blockchain.Data.UnprocessedDB
 import Blockchain.DB.CodeDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.StateDB
@@ -77,7 +78,7 @@ genesisInfoToGenesisBlock gi = do
 
 
 initializeGenesisBlock::(HasStateDB m, HasCodeDB m, HasSQLDB m, HasHashDB m)=>
-                        m Block
+                        m ()
 initializeGenesisBlock = do
   theJSONString <- liftIO $ BLC.readFile "genesis.json"
 
@@ -91,9 +92,4 @@ initializeGenesisBlock = do
   commitSqlDiffs genBDId 0 $ map diffFromPair genAddrStates
 
   putBestBlockId genBId (blockDataNumber $ blockBlockData genesisBlock)
-
-  return genesisBlock
-
-
-
-
+  deleteUnprocessed [genBId]
