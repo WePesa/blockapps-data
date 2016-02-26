@@ -16,6 +16,7 @@ import qualified Data.NibbleString as N
 import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.RLP
+import Blockchain.DB.AddressStateDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.StateDB
 import Blockchain.DB.StorageDB

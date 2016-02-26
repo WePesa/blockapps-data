@@ -16,6 +16,7 @@ import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RLP
+import Blockchain.DB.AddressStateDB
 import Blockchain.DB.CodeDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.SQLDB

@@ -19,6 +19,7 @@ import Blockchain.Data.BlockDB
 import Blockchain.Data.Extra
 import Blockchain.Data.GenesisInfo
 import Blockchain.Data.DiffDB
+import Blockchain.DB.AddressStateDB
 import Blockchain.DB.CodeDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.StateDB
