@@ -80,6 +80,7 @@ library
                    Blockchain.DB.CodeDB
                    Blockchain.DB.DetailsDB
                    Blockchain.DB.HashDB
+                   Blockchain.DB.MemStorageDB
                    Blockchain.DB.SQLDB   
                    Blockchain.DB.StateDB
                    Blockchain.DB.StorageDB
