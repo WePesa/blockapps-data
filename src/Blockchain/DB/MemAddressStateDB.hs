@@ -1,13 +1,16 @@
 
 module Blockchain.DB.MemAddressStateDB (
   HasMemAddressStateDB(..),
+  AddressStateModification,
   getAddressState,
-  getAllAddressStates,
   putAddressState,
+  flushMemAddressStateDB,
+  getAllAddressStates,
   deleteAddressState,
   addressStateExists
 ) where 
 
+import Control.Monad
 import qualified Data.Map as M
 
 import qualified Blockchain.DB.AddressStateDB as DB
@@ -16,14 +19,21 @@ import Blockchain.Data.AddressStateDB
 import Blockchain.DB.StateDB
 import Blockchain.DB.HashDB
 
+data AddressStateModification = ASModification AddressState | ASDeleted
+    
 class HasMemAddressStateDB m where
-  getAddressStateDBMap::m (M.Map Address AddressState)
-  putAddressStateDBMap::M.Map Address AddressState->m ()
+  getAddressStateDBMap::m (M.Map Address AddressStateModification)
+  putAddressStateDBMap::M.Map Address AddressStateModification->m ()
 
 
 getAddressState::(HasMemAddressStateDB m, HasStateDB m, HasHashDB m)=>
                  Address->m AddressState
-getAddressState address = DB.getAddressState address
+getAddressState address = do
+  theMap <- getAddressStateDBMap
+  case M.lookup address theMap of
+    Just (ASModification addressState) -> return addressState
+    Just ASDeleted -> return blankAddressState
+    Nothing -> DB.getAddressState address
         
 getAllAddressStates::(HasMemAddressStateDB m, HasHashDB m, HasStateDB m)=>
                      m [(Address, AddressState)]
@@ -31,12 +41,33 @@ getAllAddressStates = DB.getAllAddressStates
 
 putAddressState::(HasMemAddressStateDB m, HasStateDB m, HasHashDB m)=>
                  Address->AddressState->m ()
-putAddressState address newState = DB.putAddressState address newState
+putAddressState address newState = do
+  theMap <- getAddressStateDBMap
+  putAddressStateDBMap (M.insert address (ASModification newState) theMap)
 
+
+flushMemAddressStateDB::(HasMemAddressStateDB m, HasStateDB m, HasHashDB m)=>
+                        m ()
+flushMemAddressStateDB = do
+  theMap <- getAddressStateDBMap
+  forM_ (M.toList theMap) $ \(address, modification) -> do
+                           case modification of
+                             ASModification addressState -> DB.putAddressState address addressState
+                             ASDeleted -> DB.deleteAddressState address
+  putAddressStateDBMap M.empty
+        
 deleteAddressState::(HasMemAddressStateDB m, HasStateDB m)=>Address->
                     m ()
-deleteAddressState address = DB.deleteAddressState address
+deleteAddressState address = do
+  theMap <- getAddressStateDBMap
+  putAddressStateDBMap (M.insert address ASDeleted theMap)
+
 
 addressStateExists::(HasMemAddressStateDB m, HasStateDB m)=>Address->
                     m Bool
-addressStateExists address = DB.addressStateExists address
+addressStateExists address = do
+  theMap <- getAddressStateDBMap
+  case M.lookup address theMap of
+    Just (ASModification addressState) -> return True
+    Just ASDeleted -> return False
+    Nothing -> DB.addressStateExists address
