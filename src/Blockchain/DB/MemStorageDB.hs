@@ -30,4 +30,4 @@ getStorageKeyVal' owner key = DB.getStorageKeyVal' owner key
 
 getAllStorageKeyVals'::(DB.HasStorageDB m, HasStateDB m, HasHashDB m)=>
                        Address->m [(MP.Key, Word256)]
-getAllStorageKeyVals' owner = getAllStorageKeyVals' owner
+getAllStorageKeyVals' owner = DB.getAllStorageKeyVals' owner
