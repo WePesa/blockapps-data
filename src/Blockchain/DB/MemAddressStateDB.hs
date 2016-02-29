@@ -18,8 +18,13 @@ import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.DB.StateDB
 import Blockchain.DB.HashDB
+import Blockchain.Format
 
-data AddressStateModification = ASModification AddressState | ASDeleted
+data AddressStateModification = ASModification AddressState | ASDeleted deriving (Show)
+
+instance Format AddressStateModification where
+  format (ASModification addressState) = "Address Modified:\n" ++ format addressState
+  format ASDeleted = "Address Deleted"
     
 class HasMemAddressStateDB m where
   getAddressStateDBMap::m (M.Map Address AddressStateModification)
