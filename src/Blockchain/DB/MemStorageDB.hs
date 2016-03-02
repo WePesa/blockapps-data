@@ -2,7 +2,6 @@
 module Blockchain.DB.MemStorageDB (
   DB.HasStorageDB(..),
   putStorageKeyVal',
-  deleteStorageKey',
   getStorageKeyVal',
   getAllStorageKeyVals'
   ) where
@@ -20,10 +19,6 @@ import qualified Blockchain.DB.StorageDB as DB
 putStorageKeyVal'::(HasMemAddressStateDB m, DB.HasStorageDB m, HasStateDB m, HasHashDB m)=>
                   Address->Word256->Word256->m ()
 putStorageKeyVal' owner key val = DB.putStorageKeyVal' owner key val
-
-deleteStorageKey'::(HasMemAddressStateDB m, DB.HasStorageDB m, HasStateDB m, HasHashDB m)=>
-                   Address->Word256->m ()
-deleteStorageKey' owner key = DB.deleteStorageKey' owner key
 
 getStorageKeyVal'::(HasMemAddressStateDB m, DB.HasStorageDB m, HasStateDB m, HasHashDB m)=>
                    Address->Word256->m Word256
