@@ -33,7 +33,6 @@ library
                  , ethereum-rlp
                  , filepath
                  , haskoin
-                 --, leveldb-haskell
                  , mtl
                  , nibblestring
                  , persistent
@@ -57,20 +56,21 @@ library
                    Blockchain.Data.Code
                    Blockchain.Data.DataDefs
                    Blockchain.Data.PersistTypes
+                   Blockchain.Data.RawTransaction
                    Blockchain.Data.Transaction
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
     hs-source-dirs: src
 
---executable strato-setup
---    default-language: Haskell98
---    ghc-options: -Wall -O2
---    build-depends: 
---                   base >= 4 && < 5
---                 , blockapps-data
---                 , blockapps-util
---                 , hflags
---    buildable: True
---    main-is: Main.hs
---    hs-source-dirs: exec_src
+executable strato-setup
+    default-language: Haskell98
+    ghc-options: -Wall -O2
+    build-depends: 
+                   base >= 4 && < 5
+                 , blockapps-data
+                 , blockapps-util
+                 , hflags
+    buildable: True
+    main-is: Main.hs
+    hs-source-dirs: exec_src
