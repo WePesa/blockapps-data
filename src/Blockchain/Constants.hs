@@ -54,6 +54,9 @@ hashDBPath="/hash/"
 codeDBPath::String
 codeDBPath="/code/"
 
+blockSummaryCacheDBPath::String
+blockSummaryCacheDBPath="/blocksummarycachedb/"
+
 dbDir::String->String
 dbDir "c" = ".ethereum"
 --dbDir "c" = "Library/Application Support/Ethereum"
