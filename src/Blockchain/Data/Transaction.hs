@@ -168,7 +168,7 @@ instance Format Transaction where
       "to: " ++ show (pretty to') ++ "\n" ++
       "value: " ++ show v ++ "\n" ++
       "tData: " ++ tab ("\n" ++ format d) ++ "\n")
-  format ContractCreationTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionValue=v, transactionInit=Code init'} =
+  format ContractCreationTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionValue=v, transactionInit=theCode} =
     CL.blue "Contract Creation Transaction" ++
     tab (
       "\n" ++
@@ -176,7 +176,10 @@ instance Format Transaction where
       "gasPrice: " ++ show gp ++ "\n" ++
       "tGasLimit: " ++ show gl ++ "\n" ++
       "value: " ++ show v ++ "\n" ++
-      "tInit: " ++ tab (format init') ++ "\n")
+      "tInit: " ++ tab (codeToString theCode) ++ "\n")
+    where
+      codeToString (Code init') = format init'
+      codeToString (PrecompiledCode _) = "<precompiledCode>"
 
 --partialRLP(De|En)code are used for the signing algorithm
 partialRLPDecode::RLPObject->Transaction

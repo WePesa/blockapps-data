@@ -14,7 +14,7 @@ import Blockchain.Data.Code
 
 import Data.Aeson
 import qualified Data.ByteString.Base16 as B16
-import Database.Persist.Postgresql
+--import Database.Persist.Postgresql
 import qualified Data.Text.Encoding as T
 
 import Data.Time.Calendar
@@ -191,6 +191,7 @@ instance ToJSON Transaction' where
                 "v" .= showHex tv "",
                 "hash" .= transactionHash tx,
                 "transactionType" .= (show $ transactionSemantics $ tx)]
+    toJSON (Transaction' (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _)) = error "error in ToJSON for Transaction': You can't serialize a precompiled code"
     toJSON (Transaction' tx@(ContractCreationTX tnon tgp tgl tval (Code ti) tr ts tv)) = 
         object ["kind" .= ("Transaction" :: String), 
                 "from" .= ((uncurry showHex) $ ((fromMaybe (Address 0) (whoSignedThisTransaction tx)),"")),      
@@ -242,6 +243,7 @@ instance ToJSON Transaction where
                 "v" .= showHex tv "",
                 "hash" .= transactionHash tx,
                 "transactionType" .= (show $ transactionSemantics $ tx)]
+    toJSON (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) = error "error in ToJSON for Transaction: You can't serialize a precompiled code"
     toJSON (tx@(ContractCreationTX tnon tgp tgl tval (Code ti) tr ts tv)) = 
         object ["kind" .= ("Transaction" :: String), 
                 "from" .= ((uncurry showHex) $ ((fromMaybe (Address 0) (whoSignedThisTransaction tx)),"")),      

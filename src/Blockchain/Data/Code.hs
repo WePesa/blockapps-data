@@ -6,7 +6,6 @@ import qualified Data.ByteString as B
 import GHC.Generics 
     
 import Blockchain.Data.RLP
-import Blockchain.ExtWord
        
 data Code =
   Code{codeBytes::B.ByteString}
@@ -14,6 +13,7 @@ data Code =
 
 instance RLPSerializable Code where
     rlpEncode (Code bytes) = rlpEncode bytes
+    rlpEncode (PrecompiledCode _) = error "Error in call to rlpEncode for Code: Precompiled contracts can not be serialized."
     rlpDecode = Code . rlpDecode
 
 -- instance Format Code where

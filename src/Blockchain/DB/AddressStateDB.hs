@@ -25,25 +25,18 @@ module Blockchain.DB.AddressStateDB (
 ) where 
 
 import Blockchain.Data.Address
-import qualified Blockchain.Colors as CL
 
 import Blockchain.ExtWord
-import Blockchain.Format
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.RLP
 import Blockchain.DB.HashDB
 import Blockchain.DB.StateDB
-import Blockchain.SHA
 import Blockchain.Util
-import Blockchain.Data.DataDefs
 import qualified Blockchain.Database.MerklePatricia as MP
 import qualified Blockchain.Database.MerklePatricia.Internal as MP
 
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL
-
-import Numeric
-import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
 import Control.Monad.State as ST
 import Control.Monad.Trans.Resource

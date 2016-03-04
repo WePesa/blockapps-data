@@ -9,9 +9,6 @@ module Blockchain.DB.StorageDB (
 
 import Control.Monad.State
 import Control.Monad.Trans.Resource
-import Control.Monad.Trans.Resource
-import qualified Data.ByteString as B
-import Data.Default
 import qualified Data.Map as M
 import qualified Database.LevelDB as DB
 

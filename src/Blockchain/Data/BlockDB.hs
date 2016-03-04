@@ -74,6 +74,7 @@ txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
 txAndTime2RawTX fromBlock tx blkNum time =
   case tx of
     (MessageTX nonce gp gl to val dat r s v) -> (RawTransaction time signer nonce gp gl (Just to) val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
     (ContractCreationTX nonce gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
   where
     signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
@@ -244,7 +245,7 @@ putBlocks blocks makeHashOne = do
 putBlocksKafka::MonadIO m=>[Block]->m ()
 putBlocksKafka blocks = do
   forM_ blocks $ \block -> do
-    result <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "thetopic" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "thetopic" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 

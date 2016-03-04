@@ -77,7 +77,7 @@ addressStateExists::(HasMemAddressStateDB m, HasStateDB m)=>Address->
 addressStateExists address = do
   theMap <- getAddressStateDBMap
   case M.lookup address theMap of
-    Just (ASModification addressState) -> return True
+    Just (ASModification _) -> return True
     Just ASDeleted -> return False
     Nothing -> DB.addressStateExists address
 
