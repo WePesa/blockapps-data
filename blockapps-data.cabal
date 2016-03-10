@@ -17,6 +17,19 @@ source-repository this
   branch:   master
   tag:      v0.0.1
 
+
+executable strato-setup
+    default-language: Haskell98
+    ghc-options: -Wall -O2 -lstdc++ -lleveldb
+    build-depends: 
+                   base >= 4 && < 5
+                 , blockapps-data
+                 --, strato-setup
+                 --, hflags
+    buildable: True
+    main-is: Main.hs
+    hs-source-dirs: exec_src
+
 library
     default-language: Haskell98
     build-depends: 
@@ -33,6 +46,7 @@ library
                  , ethereum-rlp
                  , filepath
                  , haskoin
+                 , leveldb-haskell
                  , mtl
                  , nibblestring
                  , persistent
@@ -50,8 +64,31 @@ library
                  , blockapps-util
                  , esqueleto
                  , crypto-pubkey-types
-      		 
+           
     exposed-modules: 
+                   Blockchain.Constants
+                   Blockchain.Data.AddressStateDB
+                   Blockchain.Data.BlockDB
+                   Blockchain.Data.DiffDB
+                   Blockchain.Data.Extra
+                   Blockchain.Data.GenesisBlock
+                   Blockchain.Data.GenesisInfo
+                   Blockchain.Data.Json
+                   Blockchain.Data.Log
+                   Blockchain.Data.LogDB
+                   Blockchain.Data.UnprocessedDB
+                   Blockchain.Data.TransactionReceipt
+                   Blockchain.Data.TransactionResult
+                   Blockchain.DBM
+                   Blockchain.DB.BlockDB
+                   Blockchain.DB.CodeDB
+                   Blockchain.DB.DetailsDB
+                   Blockchain.DB.HashDB
+                   Blockchain.DB.SQLDB   
+                   Blockchain.DB.StateDB
+                   Blockchain.DB.StorageDB
+                   Blockchain.ExtDBs
+                   Blockchain.Setup
                    Blockchain.Data.Address
                    Blockchain.Data.Code
                    Blockchain.Data.DataDefs
@@ -59,6 +96,6 @@ library
                    Blockchain.Data.RawTransaction
                    Blockchain.Data.Transaction
     ghc-options: -Wall -O2
-    extensions: TemplateHaskell
     buildable: True
     hs-source-dirs: src
+    extensions: TemplateHaskell
