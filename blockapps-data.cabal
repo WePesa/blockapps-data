@@ -79,6 +79,7 @@ library
                    Blockchain.DB.CodeDB
                    Blockchain.DB.DetailsDB
                    Blockchain.DB.HashDB
+                   Blockchain.DB.KafkaTools
                    Blockchain.DB.MemAddressStateDB
                    Blockchain.DB.SQLDB   
                    Blockchain.DB.StateDB
