@@ -17,8 +17,8 @@ fourth4 (_, _, _, x) = x
 fifth5::(a,b,c,d,e)->e
 fifth5 (_, _, _, _, x) = x
 
-fetchBytes::Offset->TopicName->Kafka [B.ByteString]
-fetchBytes offset topic = do
+fetchBytes::TopicName->Offset->Kafka [B.ByteString]
+fetchBytes topic offset = do
   result <- fetch (Offset $ fromIntegral offset) 0 topic
   return $ concat $ map (map (_kafkaByteString . fromJust . _valueBytes . fifth5 . _messageFields .  _setMessage)) $ map _messageSetMembers $ map fourth4 $ head $ map snd $ _fetchResponseFields result
 

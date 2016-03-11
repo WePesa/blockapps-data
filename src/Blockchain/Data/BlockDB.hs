@@ -19,6 +19,7 @@ module Blockchain.Data.BlockDB (
   getBlock,
   putBlocks,
   putBlocksKafka,
+  fetchBlocks,
   rawTX2TX,
   tx2RawTXAndTime,
   nextDifficulty
@@ -41,6 +42,7 @@ import Data.Time.Clock.POSIX
 
 import Network.Kafka
 import Network.Kafka.Producer
+import Network.Kafka.Protocol hiding (Key)
 
 import Numeric
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
@@ -53,6 +55,7 @@ import Blockchain.DB.SQLDB
 
 import Blockchain.ExtWord
 import Blockchain.Format
+import Blockchain.DB.KafkaTools
 import Blockchain.Data.RLP
 import Blockchain.SHA
 import Blockchain.Util
@@ -245,9 +248,12 @@ putBlocks blocks makeHashOne = do
 putBlocksKafka::MonadIO m=>[Block]->m ()
 putBlocksKafka blocks = do
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "thetopic" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
+
+fetchBlocks::Offset->Kafka [Block]
+fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =
