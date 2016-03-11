@@ -248,7 +248,7 @@ putBlocks blocks makeHashOne = do
 produceBlocks::MonadIO m=>[Block]->m ()
 produceBlocks blocks = do
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 
