@@ -18,7 +18,7 @@ module Blockchain.Data.BlockDB (
   blockHash,
   getBlock,
   putBlocks,
-  putBlocksKafka,
+  produceBlocks,
   fetchBlocks,
   rawTX2TX,
   tx2RawTXAndTime,
@@ -245,8 +245,8 @@ putBlocks blocks makeHashOne = do
                   return $ SQL.entityKey tx
                 _ -> error "DB has multiple transactions with the same hash"
 
-putBlocksKafka::MonadIO m=>[Block]->m ()
-putBlocksKafka blocks = do
+produceBlocks::MonadIO m=>[Block]->m ()
+produceBlocks blocks = do
   forM_ blocks $ \block -> do
     _ <- liftIO $ runKafka (mkKafkaState "qqqqkafkaclientidqqqq" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result

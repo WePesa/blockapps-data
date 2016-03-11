@@ -86,7 +86,7 @@ initializeGenesisBlock = do
   
   genesisBlock <- genesisInfoToGenesisBlock theJSON
 
-  putBlocksKafka [genesisBlock]
+  produceBlocks [genesisBlock]
                   
   [(genBId, genBDId)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
