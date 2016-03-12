@@ -212,13 +212,13 @@ putBlocks blocks makeHashOne = do
     forM blocksAndHashes $ actions dm
       
   where actions dm (b, hash') = do
-          liftIO $ putStrLn $ "checking if block with hash exists: " ++ format (blockHash b)
+          --liftIO $ putStrLn $ "checking if block with hash exists: " ++ format (blockHash b)
           existingBlockData
                  <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b]
                                    [ ]
           case existingBlockData of
            [] -> do
-             liftIO $ putStrLn "block is new"
+             --liftIO $ putStrLn "block is new"
              blkId <- SQL.insert $ b
              toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
              time <- liftIO getCurrentTime
@@ -230,7 +230,7 @@ putBlocks blocks makeHashOne = do
              _ <- SQL.insert $ Unprocessed blkId
              return (blkId, blkDataRefId)
            [bd] -> do
-             liftIO $ putStrLn "block exists"
+             --liftIO $ putStrLn "block exists"
              return (blockDataRefBlockId $ SQL.entityVal bd, SQL.entityKey bd)
            _ -> error "DB has multiple blocks with the same hash"
 
