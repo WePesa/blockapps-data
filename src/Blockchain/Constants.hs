@@ -57,6 +57,9 @@ codeDBPath="/code/"
 blockSummaryCacheDBPath::String
 blockSummaryCacheDBPath="/blocksummarycachedb/"
 
+indexOffsetPath::String
+indexOffsetPath="/indexOffset"
+
 dbDir::String->String
 dbDir "c" = ".ethereum"
 --dbDir "c" = "Library/Application Support/Ethereum"
