@@ -1,8 +1,7 @@
 
 module Blockchain.Data.Extra (
-     getBestProcessedStateRoot,
-     getBestBlockId,
-     putBestBlockId,
+     getBestBlockInfo,
+     putBestBlockInfo,
     ) where
 
 import qualified Database.Persist.Sql as SQL
@@ -11,21 +10,13 @@ import Blockchain.Data.DataDefs
 import qualified Blockchain.Database.MerklePatricia as MP
 import Blockchain.DB.SQLDB
 
-getBestBlockId::HasSQLDB m=>
-                m (BlockId, Integer)
-getBestBlockId = do
-  s <- sqlQuery $ SQL.getJust (ExtraKey "bestBlock")
-  return $ read $ extraValue s
+getBestBlockInfo::HasSQLDB m =>
+                  m (MP.SHAPtr, Integer)
+getBestBlockInfo = 
+  fmap (read . extraValue) $ sqlQuery $ SQL.getJust (ExtraKey "bestBlock")
 
-getBestProcessedStateRoot::HasSQLDB m =>
-                           m (MP.SHAPtr, Integer)
-getBestProcessedStateRoot = do
-  (bid, n) <- getBestBlockId
-  b <- sqlQuery $ SQL.getJust bid
-  return (blockDataStateRoot $ blockBlockData b, n)
-
-putBestBlockId::HasSQLDB m=>
-                BlockId ->Integer->m ()
-putBestBlockId bid bestNumber = do
-  _ <- sqlQuery $ SQL.upsert (Extra "bestBlock" $ show (bid, bestNumber)) []
+putBestBlockInfo::HasSQLDB m=>
+                MP.SHAPtr->Integer->m ()
+putBestBlockInfo sr bestNumber = do
+  _ <- sqlQuery $ SQL.upsert (Extra "bestBlock" $ show (sr, bestNumber)) []
   return ()
