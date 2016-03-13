@@ -93,8 +93,7 @@ initializeGenesisBlock = do
   let diffFromPair (addr', addrS) = CreateAddr addr' addrS
   commitSqlDiffs 0 $ map diffFromPair genAddrStates
 
-  putBestBlockInfo (blockDataStateRoot $ blockBlockData genesisBlock)
-    (blockDataNumber $ blockBlockData genesisBlock)
+  putBestBlockInfo (blockHash genesisBlock) (blockBlockData genesisBlock)
 
   return genesisBlock
 

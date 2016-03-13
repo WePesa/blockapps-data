@@ -9,14 +9,15 @@ import qualified Database.Persist.Sql as SQL
 import Blockchain.Data.DataDefs
 import qualified Blockchain.Database.MerklePatricia as MP
 import Blockchain.DB.SQLDB
+import Blockchain.SHA
 
 getBestBlockInfo::HasSQLDB m =>
-                  m (MP.SHAPtr, Integer)
+                  m (SHA, BlockData)
 getBestBlockInfo = 
   fmap (read . extraValue) $ sqlQuery $ SQL.getJust (ExtraKey "bestBlock")
 
 putBestBlockInfo::HasSQLDB m=>
-                MP.SHAPtr->Integer->m ()
-putBestBlockInfo sr bestNumber = do
-  _ <- sqlQuery $ SQL.upsert (Extra "bestBlock" $ show (sr, bestNumber)) []
+                SHA->BlockData->m ()
+putBestBlockInfo hash bd = do
+  _ <- sqlQuery $ SQL.upsert (Extra "bestBlock" $ show (hash, bd)) []
   return ()
