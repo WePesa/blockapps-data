@@ -152,10 +152,6 @@ BlockAppLogin json
     ip String
     deriving Show Read Eq
 
-Unprocessed json
-    blockId BlockId
-    deriving Show
-
 Extra
     theKey String
     value String

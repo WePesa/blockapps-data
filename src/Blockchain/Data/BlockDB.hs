@@ -227,7 +227,6 @@ putBlocks blocks makeHashOne = do
                txID <- insertOrUpdate b rawTX
                SQL.insert $ BlockTransaction blkId txID
              blkDataRefId <- SQL.insert $ toInsert
-             _ <- SQL.insert $ Unprocessed blkId
              return (blkId, blkDataRefId)
            [bd] -> do
              --liftIO $ putStrLn "block exists"

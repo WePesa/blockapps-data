@@ -18,7 +18,6 @@ import System.FilePath
 
 import qualified Blockchain.Colors as CL
 import qualified Blockchain.Database.MerklePatricia as MP
-import Blockchain.Data.UnprocessedDB
 import Blockchain.Data.DataDefs
 import Blockchain.Data.GenesisBlock
 import Blockchain.DB.CodeDB
@@ -85,8 +84,6 @@ oneTimeSetup = do
 
     rawExecute "CREATE INDEX CONCURRENTLY ON storage (key);" []
     
-    rawExecute "CREATE INDEX CONCURRENTLY ON unprocessed (block_id);" []
-
   _ <-
     runResourceT $ do
       liftIO $ putStrLn $ CL.yellow ">>>> Setting UP DB handles"
@@ -108,8 +105,7 @@ oneTimeSetup = do
         addCode B.empty --blank code is the default for Accounts, but gets added nowhere else.
         liftIO $ putStrLn $ CL.yellow ">>>> Initializing Genesis Block"
         _ <- initializeGenesisBlock
-        genesisBlockId <- getGenesisBlockId
-        putUnprocessed [Unprocessed genesisBlockId]
+        return ()
 
   return ()
 
