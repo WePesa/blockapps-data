@@ -20,6 +20,8 @@ module Blockchain.Data.BlockDB (
   putBlocks,
   produceBlocks,
   fetchBlocks,
+  produceUnminedBlocks,
+  fetchUnminedBlocks,
   rawTX2TX,
   tx2RawTXAndTime,
   nextDifficulty
@@ -253,6 +255,16 @@ produceBlocks blocks = do
 
 fetchBlocks::Offset->Kafka [Block]
 fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
+
+produceUnminedBlocks::MonadIO m=>[Block]->m ()
+produceUnminedBlocks blocks = do
+  forM_ blocks $ \block -> do
+    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    --liftIO $ print result
+    return ()
+
+fetchUnminedBlocks::Offset->Kafka [Block]
+fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "unminedblock"
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =
