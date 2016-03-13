@@ -34,17 +34,17 @@ import GHC.Generics
 type SqlDbM m = SQL.SqlPersistT m
 
 sqlDiff :: (HasSQLDB m, HasCodeDB m, HasStateDB m, HasHashDB m, MonadResource m, MonadBaseControl IO m)=>
-           BlockDataRefId -> Integer -> SHAPtr -> SHAPtr -> m ()
-sqlDiff blkDataId blkNum oldAddrs newAddrs = do
+           Integer -> SHAPtr -> SHAPtr -> m ()
+sqlDiff blkNum oldAddrs newAddrs = do
   db <- getStateDB
   diffAddrs <- addrDbDiff db oldAddrs newAddrs
-  commitSqlDiffs blkDataId blkNum diffAddrs
+  commitSqlDiffs blkNum diffAddrs
 
 commitSqlDiffs :: (HasStateDB m, HasHashDB m, HasCodeDB m, HasSQLDB m, MonadResource m, MonadBaseControl IO m)=>
-                  BlockDataRefId -> Integer -> [AddrDiffOp] -> m ()
-commitSqlDiffs blkDataId blkNum diffAddrs = do
+                  Integer -> [AddrDiffOp] -> m ()
+commitSqlDiffs blkNum diffAddrs = do
   pool <- getSQLDB
-  SQL.runSqlPool (mapM_ (commitAddr blkDataId blkNum) diffAddrs) pool
+  SQL.runSqlPool (mapM_ (commitAddr blkNum) diffAddrs) pool
 
 data AddrDiffOp =
   CreateAddr { addr :: Address, state :: AddressState } |
@@ -77,11 +77,11 @@ addrConvert (Diff.Update k v1 v2) = do
   return $ UpdateAddr k' v1' v2'
 
 commitAddr :: (HasStateDB m, HasHashDB m, HasCodeDB m, MonadResource m, MonadBaseControl IO m)=>
-              BlockDataRefId -> Integer -> AddrDiffOp -> SQL.SqlPersistT m ()
+              Integer -> AddrDiffOp -> SQL.SqlPersistT m ()
 
-commitAddr blkDataId blkNum CreateAddr{ addr = addr', state = addrS } = do
+commitAddr blkNum CreateAddr{ addr = addr', state = addrS } = do
   Just code <- lift $ getCode ch
-  let aRef = AddressStateRef addr' n b cr code blkDataId blkNum -- Should use Lens here, no doubt
+  let aRef = AddressStateRef addr' n b cr code blkNum -- Should use Lens here, no doubt
   addrID <- SQL.insert aRef
   db <- lift getStateDB
   addrStorageKVs <- --lift $ lift $ lift $
@@ -95,15 +95,14 @@ commitAddr blkDataId blkNum CreateAddr{ addr = addr', state = addrS } = do
     storageOfKV addrID (CreateStorage k v)= Storage addrID k v
     storageOfKV _ _ = undefined "Ryan is confident this won't happen"
 
-commitAddr _ _ DeleteAddr{ addr = addr' } = do
+commitAddr _ DeleteAddr{ addr = addr' } = do
   addrID <- getAddressStateSQL addr' "delete"
   SQL.deleteWhere [ StorageAddressStateRefId SQL.==. addrID ]
   SQL.delete addrID
 
-commitAddr blkDataId blkNum UpdateAddr{ addr = addr', oldState = addrS1, newState = addrS2 } = do
+commitAddr blkNum UpdateAddr{ addr = addr', oldState = addrS1, newState = addrS2 } = do
   addrID <- getAddressStateSQL addr' "update"
   SQL.update addrID [ AddressStateRefNonce =. n, AddressStateRefBalance =. b,
-                      AddressStateRefLatestBlockDataRefId =. blkDataId,
                       AddressStateRefLatestBlockDataRefNumber =. blkNum]
   db <- lift getStateDB
   storageDiff <- lift $ storageDbDiff db oldAddrStorage newAddrStorage

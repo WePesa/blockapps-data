@@ -62,7 +62,6 @@ AddressStateRef
     balance Integer sqltype=numeric(1000,0)
     contractRoot SHAPtr
     code BS.ByteString
-    latestBlockDataRefId BlockDataRefId
     latestBlockDataRefNumber Integer
     deriving Show Read Eq
 

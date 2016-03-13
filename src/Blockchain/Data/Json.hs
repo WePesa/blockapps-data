@@ -320,9 +320,9 @@ bdrToBdrPrime x = BlockDataRef' x
 data AddressStateRef' = AddressStateRef' AddressStateRef deriving (Eq, Show)
 
 instance ToJSON AddressStateRef' where
-    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c bId bNum)) = 
+    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c bNum)) = 
         object ["kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
-        "contractRoot" .= cr, "code" .= c, "latestBlockId" .= bId, "latestBlockNum" .= bNum]
+        "contractRoot" .= cr, "code" .= c, "latestBlockNum" .= bNum]
 
 
 instance FromJSON AddressStateRef' where
@@ -337,7 +337,6 @@ instance FromJSON AddressStateRef' where
                 <*> (read <$> (s .: "balance"))
                 <*> s .: "contractRoot"
                 <*> s .: "code"
-                <*> s .: "latestBlockId"
                 <*> s .: "latestBlockNum"
               )
     parseJSON _ = fail "JSON not an object"
