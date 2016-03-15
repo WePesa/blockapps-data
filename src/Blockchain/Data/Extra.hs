@@ -31,17 +31,17 @@ putBestBlockInfo hash bd = do
   return ()
 
 getBestIndexBlockInfo::HasSQLDB m =>
-                       m (SHA, BlockData)
+                       m (SQL.Key Block)
 getBestIndexBlockInfo =
   sqlQuery getBestIndexBlockInfoQ
 
 getBestIndexBlockInfoQ::MonadIO m =>
-                        SQL.SqlPersistT m (SHA, BlockData)
+                        SQL.SqlPersistT m (SQL.Key Block)
 getBestIndexBlockInfoQ = 
   fmap (read . extraValue) $ SQL.getJust (ExtraKey "bestIndexBlock")
 
 putBestIndexBlockInfo::HasSQLDB m=>
-                       SHA->BlockData->m ()
-putBestIndexBlockInfo hash bd = do
-  _ <- sqlQuery $ SQL.upsert (Extra "bestIndexBlock" $ show (hash, bd)) []
+                       SQL.Key Block->m ()
+putBestIndexBlockInfo bid = do
+  _ <- sqlQuery $ SQL.upsert (Extra "bestIndexBlock" $ show bid) []
   return ()
