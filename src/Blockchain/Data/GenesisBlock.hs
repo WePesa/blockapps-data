@@ -94,6 +94,7 @@ initializeGenesisBlock = do
   commitSqlDiffs 0 $ map diffFromPair genAddrStates
 
   putBestBlockInfo (blockHash genesisBlock) (blockBlockData genesisBlock)
+  putBestIndexBlockInfo (blockHash genesisBlock) (blockBlockData genesisBlock)
 
   return genesisBlock
 
