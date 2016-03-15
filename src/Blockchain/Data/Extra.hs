@@ -2,6 +2,8 @@
 module Blockchain.Data.Extra (
      getBestBlockInfo,
      putBestBlockInfo,
+     getBestIndexBlockInfo,
+     putBestIndexBlockInfo
     ) where
 
 import qualified Database.Persist.Sql as SQL
@@ -20,4 +22,15 @@ putBestBlockInfo::HasSQLDB m=>
                 SHA->BlockData->m ()
 putBestBlockInfo hash bd = do
   _ <- sqlQuery $ SQL.upsert (Extra "bestBlock" $ show (hash, bd)) []
+  return ()
+
+getBestIndexBlockInfo::HasSQLDB m =>
+                       m (SHA, BlockData)
+getBestIndexBlockInfo = 
+  fmap (read . extraValue) $ sqlQuery $ SQL.getJust (ExtraKey "bestIndexBlock")
+
+putBestIndexBlockInfo::HasSQLDB m=>
+                       SHA->BlockData->m ()
+putBestIndexBlockInfo hash bd = do
+  _ <- sqlQuery $ SQL.upsert (Extra "bestIndexBlock" $ show (hash, bd)) []
   return ()
