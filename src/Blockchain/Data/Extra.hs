@@ -1,8 +1,8 @@
 
 module Blockchain.Data.Extra (
-     getBestBlockInfo,
+     getBestBlockInfo, getBestBlockInfoQ,
      putBestBlockInfo,
-     getBestIndexBlockInfo,
+     getBestIndexBlockInfo, getBestIndexBlockInfoQ,
      putBestIndexBlockInfo
     ) where
 
@@ -13,10 +13,16 @@ import qualified Blockchain.Database.MerklePatricia as MP
 import Blockchain.DB.SQLDB
 import Blockchain.SHA
 
+import Control.Monad.IO.Class
+
 getBestBlockInfo::HasSQLDB m =>
                   m (SHA, BlockData)
 getBestBlockInfo = 
-  fmap (read . extraValue) $ sqlQuery $ SQL.getJust (ExtraKey "bestBlock")
+  sqlQuery getBestBlockInfoQ 
+
+getBestBlockInfoQ::MonadIO m =>
+                  SQL.SqlPersistT m (SHA, BlockData)
+getBestBlockInfoQ = fmap (read . extraValue) $ SQL.getJust (ExtraKey "bestBlock")
 
 putBestBlockInfo::HasSQLDB m=>
                 SHA->BlockData->m ()
@@ -26,8 +32,13 @@ putBestBlockInfo hash bd = do
 
 getBestIndexBlockInfo::HasSQLDB m =>
                        m (SHA, BlockData)
-getBestIndexBlockInfo = 
-  fmap (read . extraValue) $ sqlQuery $ SQL.getJust (ExtraKey "bestIndexBlock")
+getBestIndexBlockInfo =
+  sqlQuery getBestIndexBlockInfoQ
+
+getBestIndexBlockInfoQ::MonadIO m =>
+                        SQL.SqlPersistT m (SHA, BlockData)
+getBestIndexBlockInfoQ = 
+  fmap (read . extraValue) $ SQL.getJust (ExtraKey "bestIndexBlock")
 
 putBestIndexBlockInfo::HasSQLDB m=>
                        SHA->BlockData->m ()
