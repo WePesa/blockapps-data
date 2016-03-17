@@ -2,6 +2,9 @@
 
 module Blockchain.Constants where
 
+import System.Directory
+import System.FilePath
+import System.FilePath.Posix
 
 ethVersion::Integer
 ethVersion=61
@@ -59,6 +62,17 @@ blockSummaryCacheDBPath="/blocksummarycachedb/"
 
 indexOffsetPath::String
 indexOffsetPath="/indexOffset"
+
+getDataDir::IO FilePath
+getDataDir = do
+  homeDir <- getHomeDirectory
+  return $ homeDir </> ".ethereumH"
+
+
+getConfDir::IO FilePath
+getConfDir = do
+  homeDir <- getHomeDirectory
+  return $ homeDir </> ".ethereumH" </> "conf"
 
 dbDir::String->String
 dbDir "c" = ".ethereum"

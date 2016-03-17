@@ -61,8 +61,8 @@ instance HasSQLDB SetupDBM where
 connStr::ConnectionString
 connStr = "host=localhost dbname=eth user=postgres password=api port=5432"
 
-oneTimeSetup::IO ()
-oneTimeSetup = do
+oneTimeSetup::String->IO ()
+oneTimeSetup genesisBlockName = do
   runNoLoggingT $ withPostgresqlConn connStr $ runReaderT $ do
     liftIO $ putStrLn $ CL.yellow ">>>> Migrating SQL DB"
     runMigration migrateAll
@@ -104,6 +104,6 @@ oneTimeSetup = do
       flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
         addCode B.empty --blank code is the default for Accounts, but gets added nowhere else.
         liftIO $ putStrLn $ CL.yellow ">>>> Initializing Genesis Block"
-        initializeGenesisBlock
+        initializeGenesisBlock genesisBlockName
 
   return ()

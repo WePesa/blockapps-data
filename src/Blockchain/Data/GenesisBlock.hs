@@ -10,9 +10,11 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Resource
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BLC
+import System.FilePath.Posix
 
 import Blockchain.Database.MerklePatricia
 
+import Blockchain.Constants
 import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.BlockDB
@@ -78,9 +80,10 @@ genesisInfoToGenesisBlock gi = do
 
 
 initializeGenesisBlock::(HasStateDB m, HasCodeDB m, HasSQLDB m, HasHashDB m)=>
-                        m ()
-initializeGenesisBlock = do
-  theJSONString <- liftIO $ BLC.readFile "genesis.json"
+                        String->m ()
+initializeGenesisBlock genesisBlockName = do
+  confDir <- liftIO $ getConfDir
+  theJSONString <- liftIO $ BLC.readFile $ confDir </> genesisBlockName ++ "Genesis.json"
 
   let theJSON = either error id $ eitherDecode theJSONString
   
