@@ -78,7 +78,7 @@ genesisInfoToGenesisBlock gi = do
 
 
 initializeGenesisBlock::(HasStateDB m, HasCodeDB m, HasSQLDB m, HasHashDB m)=>
-                        m Block
+                        m ()
 initializeGenesisBlock = do
   theJSONString <- liftIO $ BLC.readFile "genesis.json"
 
@@ -95,9 +95,4 @@ initializeGenesisBlock = do
 
   putBestBlockInfo (blockHash genesisBlock) (blockBlockData genesisBlock)
   putBestIndexBlockInfo genBId
-
-  return genesisBlock
-
-
-
 
