@@ -249,8 +249,10 @@ putBlocks blocks makeHashOne = do
 produceBlocks::MonadIO m=>[Block]->m ()
 produceBlocks blocks = do
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
-    --liftIO $ print result
+    result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    case result of
+     Left e -> error $ show e
+     Right _ -> return ()
     return ()
 
 fetchBlocks::Offset->Kafka [Block]
