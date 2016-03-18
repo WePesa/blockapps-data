@@ -65,7 +65,7 @@ oneTimeSetup::String->IO ()
 oneTimeSetup genesisBlockName = do
   runNoLoggingT $ withPostgresqlConn connStr $ runReaderT $ do
     liftIO $ putStrLn $ CL.yellow ">>>> Migrating SQL DB"
-    runMigration migrateAll
+    runMigrationSilent migrateAll
 
     liftIO $ putStrLn $ CL.yellow ">>>> Creating SQL Indexes"
     rawExecute "CREATE INDEX CONCURRENTLY ON block_data_ref (block_id);" []
