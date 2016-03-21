@@ -7,7 +7,7 @@ import System.FilePath
 import System.FilePath.Posix
 
 ethVersion::Integer
-ethVersion=61
+ethVersion=62
 shhVersion::Integer
 shhVersion=2
 
