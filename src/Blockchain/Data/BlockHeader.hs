@@ -1,6 +1,7 @@
 
 module Blockchain.Data.BlockHeader (
-  BlockHeader(..)
+  BlockHeader(..),
+  headerHash
   ) where
 
 import qualified Data.ByteString as B
@@ -55,7 +56,24 @@ instance Format BlockHeader where
          "nonce: " ++ showHex (nonce) "")
 
 instance RLPSerializable BlockHeader where
-  rlpEncode (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) = undefined
+  rlpEncode (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
+    RLPArray [
+      rlpEncode ph,
+      rlpEncode oh,
+      rlpEncode b,
+      rlpEncode sr,
+      rlpEncode tr,
+      rlpEncode rr,
+      rlpEncode lb,
+      rlpEncode d,
+      rlpEncode number,
+      rlpEncode gl,
+      rlpEncode gu,
+      rlpEncode (round $ utcTimeToPOSIXSeconds ts::Integer),
+      rlpEncode ed,
+      rlpEncode mh,
+      rlpEncode $ toInteger nonce
+      ]
   rlpDecode (RLPArray [ph, oh, b, sr, tr, rr, lb, d, number, gl, gu, ts, ed, mh, nonce]) = 
     BlockHeader {
       parentHash=rlpDecode ph,
@@ -75,3 +93,6 @@ instance RLPSerializable BlockHeader where
       nonce=fromInteger $ rlpDecode nonce
       }
   rlpDecode x = error $ "can not run rlpDecode on BlockHeader for value " ++ show x
+
+headerHash::BlockHeader->SHA
+headerHash header = hash . rlpSerialize . rlpEncode $ header
