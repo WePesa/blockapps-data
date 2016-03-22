@@ -25,6 +25,7 @@ module Blockchain.Data.BlockDB (
   rawTX2TX,
   tx2RawTXAndTime,
   nextDifficulty,
+  homesteadNextDifficulty,
   createBlockFromHeaderAndBody
 ) where 
 
@@ -163,7 +164,18 @@ nextDifficulty useTestnet parentNumber oldDifficulty oldTime newTime =
         then 2^(periodCount - 2)
         else 0
 
-
+homesteadNextDifficulty::Bool->Integer->Integer->UTCTime->UTCTime->Integer
+homesteadNextDifficulty useTestnet parentNumber oldDifficulty oldTime newTime =
+  (max nextDiff' minimumDifficulty) + if useTestnet then 0 else expAdjustment
+    where
+      block_timestamp = round (utcTimeToPOSIXSeconds newTime)::Integer
+      parent_timestamp = round (utcTimeToPOSIXSeconds oldTime)::Integer
+      nextDiff' = oldDifficulty + oldDifficulty `quot` 2048 * (max (1 - (block_timestamp - parent_timestamp) `quot` 10) (-99))
+      periodCount = (parentNumber+1) `quot` difficultyExpDiffPeriod
+      expAdjustment =
+        if periodCount > 1
+        then 2^(periodCount - 2)
+        else 0
 
 getDifficulties::HasSQLDB m=>[SHA]->m [(SHA, Integer)]
 getDifficulties hashes = do
