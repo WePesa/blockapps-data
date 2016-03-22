@@ -14,6 +14,7 @@ import qualified Blockchain.Colors as CL
 import Blockchain.Data.Address
 import Blockchain.Data.RLP
 import qualified Blockchain.Database.MerklePatricia as MP
+import Blockchain.ExtWord
 import Blockchain.Format
 import Blockchain.SHA
 import Blockchain.Util
@@ -72,7 +73,7 @@ instance RLPSerializable BlockHeader where
       rlpEncode (round $ utcTimeToPOSIXSeconds ts::Integer),
       rlpEncode ed,
       rlpEncode mh,
-      rlpEncode $ toInteger nonce
+      rlpEncode $ B.pack $ word64ToBytes nonce
       ]
   rlpDecode (RLPArray [ph, oh, b, sr, tr, rr, lb, d, number, gl, gu, ts, ed, mh, nonce]) = 
     BlockHeader {
@@ -90,7 +91,7 @@ instance RLPSerializable BlockHeader where
       timestamp=posixSecondsToUTCTime $ fromInteger $ rlpDecode ts,
       extraData=rlpDecode ed,
       mixHash=rlpDecode mh,
-      nonce=fromInteger $ rlpDecode nonce
+      nonce=bytesToWord64 $ B.unpack $ rlpDecode nonce
       }
   rlpDecode x = error $ "can not run rlpDecode on BlockHeader for value " ++ show x
 

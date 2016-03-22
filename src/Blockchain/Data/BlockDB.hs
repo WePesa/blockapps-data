@@ -24,7 +24,8 @@ module Blockchain.Data.BlockDB (
   fetchUnminedBlocks,
   rawTX2TX,
   tx2RawTXAndTime,
-  nextDifficulty
+  nextDifficulty,
+  createBlockFromHeaderAndBody
 ) where 
 
 import Database.Persist hiding (get)
@@ -51,6 +52,7 @@ import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
 import Blockchain.Constants
 import Blockchain.Data.Address
+import Blockchain.Data.BlockHeader
 import qualified Blockchain.Colors as CL
 
 import Blockchain.DB.SQLDB
@@ -349,4 +351,11 @@ instance Format BlockData where
     "timestamp: " ++ show (blockDataTimestamp b) ++ "\n" ++
     "extraData: " ++ show (pretty $ blockDataExtraData b) ++ "\n" ++
     "nonce: " ++ showHex (blockDataNonce b) "" ++ "\n"
+
+createBlockFromHeaderAndBody::BlockHeader->([Transaction], [BlockHeader])->Block
+createBlockFromHeaderAndBody header (transactions, uncles) =
+  Block (headerToBlockData header) transactions (map headerToBlockData uncles)
+  where
+    headerToBlockData (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
+      BlockData ph oh b sr tr rr lb d number gl gu ts ed nonce mh
 
