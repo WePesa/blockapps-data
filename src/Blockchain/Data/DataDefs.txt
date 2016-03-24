@@ -82,9 +82,6 @@ RawTransaction
     fromBlock Bool
     deriving Show Read Eq    
 
-NeededBlockHash
-    hash SHA
-
 PPeer 
     pubkey Point
     ip Text
