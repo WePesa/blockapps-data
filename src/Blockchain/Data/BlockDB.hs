@@ -260,14 +260,16 @@ putBlocks blocks makeHashOne = do
                   return $ SQL.entityKey tx
                 _ -> error "DB has multiple transactions with the same hash"
 
-produceBlocks::MonadIO m=>[Block]->m ()
+produceBlocks::MonadIO m=>[Block]->m Offset
 produceBlocks blocks = do
-  forM_ blocks $ \block -> do
-    result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "block" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
-    case result of
-     Left e -> error $ show e
-     Right _ -> return ()
-    return ()
+  result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
+            produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
+
+  case result of
+   Left e -> error $ show e
+   Right x -> do
+     let [offset] = concat $ map (map (\(_, _, x) ->x) . concat . map snd . _produceResponseFields) x
+     return offset
 
 fetchBlocks::Offset->Kafka [Block]
 fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
