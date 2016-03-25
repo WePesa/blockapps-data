@@ -1,7 +1,7 @@
 
 module Blockchain.DB.MemAddressStateDB (
   HasMemAddressStateDB(..),
-  AddressStateModification,
+  AddressStateModification(..),
   formatAddressStateDBMap,
   getAddressState,
   putAddressState,
