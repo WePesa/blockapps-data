@@ -59,6 +59,7 @@ library
                    Blockchain.Data.AddressStateDB
                    Blockchain.Data.BlockDB
                    Blockchain.Data.BlockHeader
+                   Blockchain.Data.BlockOffset
                    Blockchain.Data.Code
                    Blockchain.Data.DataDefs
                    Blockchain.Data.DiffDB

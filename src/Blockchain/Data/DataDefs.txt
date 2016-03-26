@@ -165,3 +165,8 @@ LogDB
     theData BS.ByteString
     bloom Word512
     deriving Show Read Eq
+
+BlockOffset
+    offset Integer
+    number Integer
+    hash SHA
