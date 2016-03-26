@@ -36,6 +36,7 @@ library
                  , ethereum-rlp
                  , filepath
                  , haskoin
+                 , lens
                  , leveldb-haskell
                  , merkle-patricia-db
                  , milena

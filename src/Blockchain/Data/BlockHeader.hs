@@ -1,7 +1,8 @@
 
 module Blockchain.Data.BlockHeader (
   BlockHeader(..),
-  headerHash
+  headerHash,
+  blockToBlockHeader
   ) where
 
 import qualified Data.ByteString as B
@@ -12,6 +13,7 @@ import Numeric
 
 import qualified Blockchain.Colors as CL
 import Blockchain.Data.Address
+import Blockchain.Data.DataDefs
 import Blockchain.Data.RLP
 import qualified Blockchain.Database.MerklePatricia as MP
 import Blockchain.ExtWord
@@ -97,3 +99,6 @@ instance RLPSerializable BlockHeader where
 
 headerHash::BlockHeader->SHA
 headerHash header = hash . rlpSerialize . rlpEncode $ header
+
+blockToBlockHeader::Block->BlockHeader
+blockToBlockHeader Block{blockBlockData=BlockData ph oh b sr tr rr lb d number gl gu ts ed mh nonce} = BlockHeader ph oh b sr tr rr lb d number gl gu ts ed nonce mh

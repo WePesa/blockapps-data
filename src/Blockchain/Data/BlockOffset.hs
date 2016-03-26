@@ -1,6 +1,7 @@
 
 module Blockchain.Data.BlockOffset (
-  putBlockOffsets
+  putBlockOffsets,
+  getBlockOffsetsForNumber
   ) where
 
 import Control.Monad
@@ -17,3 +18,13 @@ putBlockOffsets blockOffsets = do
     flip SQL.runSqlPool db $
     forM blockOffsets $ SQL.insert
   return ()
+
+getBlockOffsetsForNumber::HasSQLDB m=>Integer->m [BlockOffset]
+getBlockOffsetsForNumber blockOffset = do
+  db <- getSQLDB
+  ret <-
+    runResourceT $
+    flip SQL.runSqlPool db $
+    SQL.selectList [BlockOffsetOffset SQL.==. blockOffset] []
+
+  return $ map SQL.entityVal ret
