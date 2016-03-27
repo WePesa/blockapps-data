@@ -2,7 +2,8 @@
 
 module Blockchain.DB.KafkaTools (
   fetchBytes,
-  fetchBytesIO
+  fetchBytesIO,
+  fetchBytesOneIO
   ) where
 
 import Control.Lens
@@ -38,6 +39,11 @@ fetchBytesIO topic offset = do
   case ret of
    Left e -> error $ show e
    Right v -> return (Just v)
-                                                                                                                                                                                                                      
-
-
+              
+fetchBytesOneIO::TopicName->Offset->IO (Maybe B.ByteString)
+fetchBytesOneIO topic offset = do
+  res <- fetchBytesIO topic offset
+  case res of
+   Nothing -> return Nothing
+   Just (x:_) -> return $ Just x
+   Just [] -> error "something impossible happened in fetchBytesOneIO"              

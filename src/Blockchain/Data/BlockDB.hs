@@ -21,6 +21,7 @@ module Blockchain.Data.BlockDB (
   produceBlocks,
   fetchBlocks,
   fetchBlocksIO,
+  fetchBlocksOneIO,
   produceUnminedBlocks,
   fetchUnminedBlocks,
   rawTX2TX,
@@ -278,7 +279,11 @@ fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
 fetchBlocksIO::Offset->IO (Maybe [Block])
 fetchBlocksIO offset = do
   fmap (fmap (map (rlpDecode . rlpDeserialize))) $ fetchBytesIO "block" offset
-              
+
+fetchBlocksOneIO::Offset->IO (Maybe Block)
+fetchBlocksOneIO offset = do
+  fmap (fmap (rlpDecode . rlpDeserialize)) $ fetchBytesOneIO "block" offset
+
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
   forM_ blocks $ \block -> do
