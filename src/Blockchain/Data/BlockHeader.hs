@@ -44,8 +44,8 @@ data BlockHeader =
     } deriving (Show)
 
 instance Format BlockHeader where
-  format (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
-    CL.blue ("BlockData #" ++ show number) ++ " " ++
+  format (BlockHeader ph oh b sr tr rr _ d number' gl gu ts ed _ nonce') =
+    CL.blue ("BlockData #" ++ show number') ++ " " ++
     tab ("parentHash: " ++ format ph ++ "\n" ++
          "ommersHash: " ++ format oh ++ 
          (if oh == hash (B.pack [0xc0]) then " (the empty array)\n" else "\n") ++
@@ -58,10 +58,10 @@ instance Format BlockHeader where
          "gasUsed: " ++ show gu ++ "\n" ++
          "timestamp: " ++ show ts ++ "\n" ++
          "extraData: " ++ show ed ++ "\n" ++
-         "nonce: " ++ showHex (nonce) "")
+         "nonce: " ++ showHex (nonce') "")
 
 instance RLPSerializable BlockHeader where
-  rlpEncode (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
+  rlpEncode (BlockHeader ph oh b sr tr rr lb d number' gl gu ts ed mh nonce') =
     RLPArray [
       rlpEncode ph,
       rlpEncode oh,
@@ -71,15 +71,15 @@ instance RLPSerializable BlockHeader where
       rlpEncode rr,
       rlpEncode lb,
       rlpEncode d,
-      rlpEncode number,
+      rlpEncode number',
       rlpEncode gl,
       rlpEncode gu,
       rlpEncode (round $ utcTimeToPOSIXSeconds ts::Integer),
       rlpEncode ed,
       rlpEncode mh,
-      rlpEncode $ B.pack $ word64ToBytes nonce
+      rlpEncode $ B.pack $ word64ToBytes nonce'
       ]
-  rlpDecode (RLPArray [ph, oh, b, sr, tr, rr, lb, d, number, gl, gu, ts, ed, mh, nonce]) = 
+  rlpDecode (RLPArray [ph, oh, b, sr, tr, rr, lb, d, number', gl, gu, ts, ed, mh, nonce']) = 
     BlockHeader {
       parentHash=rlpDecode ph,
       ommersHash=rlpDecode oh,
@@ -89,13 +89,13 @@ instance RLPSerializable BlockHeader where
       receiptsRoot=rlpDecode rr,
       logsBloom=rlpDecode lb,
       difficulty=rlpDecode d,
-      number=rlpDecode number,
+      number=rlpDecode number',
       gasLimit=rlpDecode gl,
       gasUsed=rlpDecode gu,
       timestamp=posixSecondsToUTCTime $ fromInteger $ rlpDecode ts,
       extraData=rlpDecode ed,
       mixHash=rlpDecode mh,
-      nonce=bytesToWord64 $ B.unpack $ rlpDecode nonce
+      nonce=bytesToWord64 $ B.unpack $ rlpDecode nonce'
       }
   rlpDecode x = error $ "can not run rlpDecode on BlockHeader for value " ++ show x
 
@@ -110,5 +110,5 @@ blockToBody Block{blockReceiptTransactions=transactions, blockBlockUncles=uncles
   (transactions, map blockDataToBlockHeader uncles)
 
 blockDataToBlockHeader::BlockData->BlockHeader
-blockDataToBlockHeader (BlockData ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
-  BlockHeader ph oh b sr tr rr lb d number gl gu ts ed nonce mh
+blockDataToBlockHeader (BlockData ph oh b sr tr rr lb d number' gl gu ts ed mh nonce') =
+  BlockHeader ph oh b sr tr rr lb d number' gl gu ts ed nonce' mh

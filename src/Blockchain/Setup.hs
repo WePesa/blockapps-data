@@ -10,7 +10,6 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
 import Control.Monad.Trans.State
 import qualified Data.ByteString as B
-import qualified Database.Esqueleto as E
 import qualified Database.LevelDB as DB
 import Database.Persist.Postgresql hiding (get)
 import System.Directory
@@ -65,7 +64,7 @@ oneTimeSetup::String->IO ()
 oneTimeSetup genesisBlockName = do
   runNoLoggingT $ withPostgresqlConn connStr $ runReaderT $ do
     liftIO $ putStrLn $ CL.yellow ">>>> Migrating SQL DB"
-    runMigrationSilent migrateAll
+    _ <- runMigrationSilent migrateAll
 
     liftIO $ putStrLn $ CL.yellow ">>>> Creating SQL Indexes"
     rawExecute "CREATE INDEX CONCURRENTLY ON block_data_ref (block_id);" []

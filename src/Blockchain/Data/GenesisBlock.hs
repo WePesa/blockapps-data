@@ -94,7 +94,7 @@ initializeGenesisBlock genesisBlockName = do
   offset <- produceBlocks [genesisBlock]
   putBlockOffsets [BlockOffset (fromIntegral offset) (blockDataNumber $ blockBlockData genesisBlock) (blockHash genesisBlock)]
             
-  [(genBId, genBDId)] <- putBlocks [genesisBlock] False
+  [(genBId, _)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
   let diffFromPair (addr', addrS) = CreateAddr addr' addrS
   commitSqlDiffs 0 $ map diffFromPair genAddrStates

@@ -77,15 +77,15 @@ import Control.Monad.Trans.Resource
 --import Debug.Trace
 
 rawTX2TX :: RawTransaction -> Transaction
-rawTX2TX (RawTransaction _ _ nonce gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce gp gl to val dat r s v)
-rawTX2TX (RawTransaction _ _ nonce gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce gp gl val (Code init') r s v)
+rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce' gp gl to val dat r s v)
+rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
 
 txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
 txAndTime2RawTX fromBlock tx blkNum time =
   case tx of
-    (MessageTX nonce gp gl to val dat r s v) -> (RawTransaction time signer nonce gp gl (Just to) val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (MessageTX nonce' gp gl to val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to) val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
     (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
-    (ContractCreationTX nonce gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
   where
     signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
 
@@ -115,9 +115,9 @@ calcTotalDifficulty b _ = do
 blk2BlkDataRef :: (HasSQLDB m, MonadResource m) =>
                   M.Map SHA Integer->(Block, SHA)->BlockId->Bool->m BlockDataRef
 blk2BlkDataRef dm (b, hash') blkId makeHashOne= do
-  let difficulty = fromMaybe (error $ "missing value in difficulty map: " ++ format hash') $
+  let difficulty' = fromMaybe (error $ "missing value in difficulty map: " ++ format hash') $
                    M.lookup hash' dm --  <- calcTotalDifficulty b blkId
-  return (BlockDataRef pH uH cB sR tR rR lB d n gL gU t eD nc mH blkId hash'' True True difficulty) --- Horrible! Apparently I need to learn the Lens library, yesterday
+  return (BlockDataRef pH uH cB sR tR rR lB d n gL gU t eD nc mH blkId hash'' True True difficulty') --- Horrible! Apparently I need to learn the Lens library, yesterday
   where
       hash'' = if makeHashOne then SHA 1 else hash'
       bd = (blockBlockData b)
@@ -198,8 +198,8 @@ getDifficulties hashes = do
 
 addDifficulties::M.Map SHA Integer->[(SHA, Integer, SHA)]->M.Map SHA Integer
 addDifficulties dm [] = dm
-addDifficulties dm ((hash', blockDifficulty, parentHash):rest) = 
-  let parentDifficulty = fromMaybe (error $ "missing hash in difficulty map in addDifficulties: " ++ format parentHash ++ ", hash=" ++ format hash') $ M.lookup parentHash dm
+addDifficulties dm ((hash', blockDifficulty, parentHash'):rest) = 
+  let parentDifficulty = fromMaybe (error $ "missing hash in difficulty map in addDifficulties: " ++ format parentHash' ++ ", hash=" ++ format hash') $ M.lookup parentHash' dm
       dm' = M.insert hash' (parentDifficulty + blockDifficulty) dm
   in addDifficulties dm' rest
 
@@ -270,7 +270,7 @@ produceBlocks blocks = do
   case result of
    Left e -> error $ show e
    Right x -> do
-     let [offset] = concat $ map (map (\(_, _, x) ->x) . concat . map snd . _produceResponseFields) x
+     let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
      return offset
 
 fetchBlocks::Offset->Kafka [Block]
@@ -380,6 +380,6 @@ createBlockFromHeaderAndBody::BlockHeader->([Transaction], [BlockHeader])->Block
 createBlockFromHeaderAndBody header (transactions, uncles) =
   Block (headerToBlockData header) transactions (map headerToBlockData uncles)
   where
-    headerToBlockData (BlockHeader ph oh b sr tr rr lb d number gl gu ts ed mh nonce) =
-      BlockData ph oh b sr tr rr lb d number gl gu ts ed nonce mh
+    headerToBlockData (BlockHeader ph oh b sr tr rr lb d number' gl gu ts ed mh nonce') =
+      BlockData ph oh b sr tr rr lb d number' gl gu ts ed nonce' mh
 

@@ -4,7 +4,6 @@ module Blockchain.Constants where
 
 import System.Directory
 import System.FilePath
-import System.FilePath.Posix
 
 ethVersion::Integer
 ethVersion=62

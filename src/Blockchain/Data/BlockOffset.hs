@@ -17,9 +17,9 @@ import Blockchain.SHA
 putBlockOffsets::HasSQLDB m=>[BlockOffset]->m ()
 putBlockOffsets blockOffsets = do
   db <- getSQLDB
-  runResourceT $
-    flip SQL.runSqlPool db $
-    forM blockOffsets $ SQL.insert
+  _ <- runResourceT $
+       flip SQL.runSqlPool db $
+       forM blockOffsets $ SQL.insert
   return ()
 
 getBlockOffsetsForNumber::HasSQLDB m=>Integer->m [BlockOffset]

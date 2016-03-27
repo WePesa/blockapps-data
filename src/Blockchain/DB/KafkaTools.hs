@@ -7,9 +7,7 @@ module Blockchain.DB.KafkaTools (
   ) where
 
 import Control.Lens
-import Control.Monad
 import qualified Data.ByteString as B
-import Data.Maybe
 
 import Network.Kafka
 import Network.Kafka.Consumer
@@ -28,17 +26,16 @@ fetchBytesIO topic offset = do
 
       if (offset > lastOffset)
         then return Nothing
-        else return $ Just ()
-  
-      stateRequiredAcks .= -1
-      stateWaitSize .= 1
-      stateWaitTime .= 100000
-      fmap (map tamPayload . fetchMessages) $ fetch offset 0 topic
+        else do
+          stateRequiredAcks .= -1
+          stateWaitSize .= 1
+          stateWaitTime .= 100000
+          fmap (Just . map tamPayload . fetchMessages) $ fetch offset 0 topic
 
 
   case ret of
    Left e -> error $ show e
-   Right v -> return (Just v)
+   Right v -> return v
               
 fetchBytesOneIO::TopicName->Offset->IO (Maybe B.ByteString)
 fetchBytesOneIO topic offset = do
