@@ -5,6 +5,8 @@ module Blockchain.Constants where
 import System.Directory
 import System.FilePath
 
+import Blockchain.EthConf
+
 ethVersion::Integer
 ethVersion=62
 shhVersion::Integer
@@ -34,7 +36,7 @@ wei = 1
 
 minimumDifficulty=131072
 
-difficultyDurationLimit testnet =if testnet then 8 else 13
+difficultyDurationLimit testnet =if testnet then 8 else (blockTime $ blockConfig ethConf)
 
 difficultyAdjustment=11::Int
 
