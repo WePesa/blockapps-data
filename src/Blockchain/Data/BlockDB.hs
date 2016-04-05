@@ -22,6 +22,7 @@ module Blockchain.Data.BlockDB (
   fetchBlocks,
   fetchBlocksIO,
   fetchBlocksOneIO,
+  fetchLastBlocks,
   produceUnminedBlocks,
   fetchUnminedBlocks,
   rawTX2TX,
@@ -30,6 +31,8 @@ module Blockchain.Data.BlockDB (
   homesteadNextDifficulty,
   createBlockFromHeaderAndBody
 ) where 
+
+import Control.Lens
 
 import Database.Persist hiding (get)
 import qualified Database.Persist.Postgresql as SQL
@@ -285,6 +288,27 @@ fetchBlocksIO offset = do
 fetchBlocksOneIO::Offset->IO (Maybe Block)
 fetchBlocksOneIO offset = do
   fmap (fmap (rlpDecode . rlpDeserialize)) $ fetchBytesOneIO "block" offset
+
+fetchLastBlocks::Offset->IO [Block]
+fetchLastBlocks n = do
+  ret <-
+    runKafka (mkKafkaState "strato-p2p-client" ("127.0.0.1", 9092)) $ do
+      stateRequiredAcks .= -1
+      stateWaitSize .= 1
+      stateWaitTime .= 100000
+      lastOffset <- getLastOffset LatestTime 0 "block"
+      when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
+      let offset = max (lastOffset - n) 0
+      fetchBlocks offset
+
+  case ret of
+    Left e -> error $ show e
+    Right v -> return v
+
+
+
+
+
 
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
