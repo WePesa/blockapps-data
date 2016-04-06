@@ -170,3 +170,4 @@ BlockOffset
     offset Integer
     number Integer
     hash SHA
+    Primary hash
