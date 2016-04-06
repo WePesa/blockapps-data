@@ -92,7 +92,6 @@ initializeGenesisBlock genesisBlockName = do
   genesisBlock <- genesisInfoToGenesisBlock theJSON
 
   offset <- produceBlocks [genesisBlock]
-  putBlockOffsets [BlockOffset (fromIntegral offset) (blockDataNumber $ blockBlockData genesisBlock) (blockHash genesisBlock)]
             
   [(genBId, _)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
