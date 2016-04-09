@@ -18,8 +18,6 @@ import Blockchain.Constants
 import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.BlockDB
-import Blockchain.Data.BlockOffset
-import Blockchain.Data.DataDefs
 import Blockchain.Data.Extra
 import Blockchain.Data.GenesisInfo
 import Blockchain.Data.DiffDB
@@ -91,7 +89,7 @@ initializeGenesisBlock genesisBlockName = do
   
   genesisBlock <- genesisInfoToGenesisBlock theJSON
 
-  offset <- produceBlocks [genesisBlock]
+  _ <- produceBlocks [genesisBlock]
             
   [(genBId, _)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
