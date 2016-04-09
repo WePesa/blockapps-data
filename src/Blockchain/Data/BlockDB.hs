@@ -268,6 +268,9 @@ putBlocks blocks makeHashOne = do
 
 produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
 produceBlocks blocks = do
+  liftIO $ putStrLn $ "########## precheck"
+  result <- getBlockOffsetsForHashes (map blockHash blocks)
+  liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length result)
   result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
             produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
 
