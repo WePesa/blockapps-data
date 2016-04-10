@@ -34,6 +34,8 @@ module Blockchain.Data.BlockDB (
 
 import Control.Lens
 
+import Control.Exception.Lifted
+
 import Database.Persist hiding (get)
 import qualified Database.Persist.Postgresql as SQL
 import qualified Database.Esqueleto as E
@@ -270,21 +272,21 @@ produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
 produceBlocks blocks = do
   liftIO $ putStrLn $ "########## " ++ unlines (map format blocks)
   liftIO $ putStrLn $ "########## precheck"
-  result <- getBlockOffsetsForHashes (map blockHash blocks)
-  liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length result)
+  blockOffsets <- getBlockOffsetsForHashes (map blockHash blocks)
+  liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length blockOffsets)
   result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
             produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
 
   liftIO $ putStrLn $ "########## postcheck"
-  blockOffsets <- getBlockOffsetsForHashes (map blockHash blocks)
-  liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length blockOffsets)
+  blockOffsets' <- getBlockOffsetsForHashes (map blockHash blocks)
+  liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length blockOffsets')
 
 
   case result of
    Left e -> error $ show e
    Right x -> do
      let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
-     putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
+     (x::Either SomeException ()) <- try $ putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
      return offset
 
 fetchBlocks::Offset->Kafka [Block]
