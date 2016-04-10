@@ -171,3 +171,4 @@ BlockOffset
     number Integer
     hash SHA
     Primary hash
+    UniqueH hash
