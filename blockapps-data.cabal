@@ -38,6 +38,7 @@ library
                  , haskoin
                  , lens
                  , leveldb-haskell
+                 , lifted-base
                  , merkle-patricia-db
                  , milena
                  , monad-logger
