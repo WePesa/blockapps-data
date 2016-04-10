@@ -19,7 +19,7 @@ putBlockOffsets blockOffsets = do
   db <- getSQLDB
   _ <- runResourceT $
        flip SQL.runSqlPool db $
-       forM blockOffsets $ SQL.insert
+       forM blockOffsets $ \offset -> SQL.upsert offset []
   return ()
 
 getBlockOffsetsForNumber::HasSQLDB m=>Integer->m [BlockOffset]
