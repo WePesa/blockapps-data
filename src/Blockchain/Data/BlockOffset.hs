@@ -28,7 +28,7 @@ getBlockOffsetsForNumber blockOffset = do
   ret <-
     runResourceT $
     flip SQL.runSqlPool db $
-    SQL.selectList [BlockOffsetOffset SQL.==. blockOffset] []
+    SQL.selectList [BlockOffsetNumber SQL.==. blockOffset] []
 
   return $ map SQL.entityVal ret
 
