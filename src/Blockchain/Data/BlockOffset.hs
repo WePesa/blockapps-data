@@ -2,6 +2,7 @@
 module Blockchain.Data.BlockOffset (
   putBlockOffsets,
   getBlockOffsetsForNumber,
+  getOffsetsForHashes,
   getBlockOffsetsForHashes
   ) where
 
@@ -32,8 +33,8 @@ getBlockOffsetsForNumber blockOffset = do
 
   return $ map SQL.entityVal ret
 
-getBlockOffsetsForHashes::HasSQLDB m=>[SHA]->m [Integer]
-getBlockOffsetsForHashes hashes = do
+getOffsetsForHashes::HasSQLDB m=>[SHA]->m [Integer]
+getOffsetsForHashes hashes = do
   db <- getSQLDB
   offsets <-
     runResourceT $
@@ -44,4 +45,17 @@ getBlockOffsetsForHashes hashes = do
       return $ blockOffset E.^. BlockOffsetOffset
       
   return $ map E.unValue offsets
+
+getBlockOffsetsForHashes::HasSQLDB m=>[SHA]->m [BlockOffset]
+getBlockOffsetsForHashes hashes = do
+  db <- getSQLDB
+  blockOffsets <-
+    runResourceT $
+    flip SQL.runSqlPool db $ 
+    E.select $
+    E.from $ \blockOffset -> do
+      E.where_ ((blockOffset E.^. BlockOffsetHash) `E.in_` E.valList hashes)
+      return blockOffset
+      
+  return $ map E.entityVal blockOffsets
 
