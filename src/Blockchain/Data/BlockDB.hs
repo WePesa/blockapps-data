@@ -42,6 +42,7 @@ import qualified Database.Esqueleto as E
 
 import Data.Bits
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 
 import Data.List
 import qualified Data.Map as M
@@ -68,6 +69,7 @@ import Blockchain.DB.SQLDB
 import Blockchain.ExtWord
 import Blockchain.Format
 import Blockchain.DB.KafkaTools
+import Blockchain.KafkaTopics
 import Blockchain.Data.RLP
 import Blockchain.Data.BlockOffset
 import Blockchain.SHA
@@ -83,13 +85,13 @@ import Control.Monad.Trans.Resource
 --import Debug.Trace
 
 rawTX2TX :: RawTransaction -> Transaction
-rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to') val dat r s v _ _ _) = (MessageTX nonce' gp gl to' val dat r s v)
+rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce' gp gl to val dat r s v)
 rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
 
 txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
 txAndTime2RawTX fromBlock tx blkNum time =
   case tx of
-    (MessageTX nonce' gp gl to' val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to') val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (MessageTX nonce' gp gl to val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to) val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
     (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
     (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
   where
@@ -270,11 +272,14 @@ putBlocks blocks makeHashOne = do
 
 produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
 produceBlocks blocks = do
+  let maybeBlockappsDataTopic = M.lookup "blockapps-data" kafkaTopics
+      kafkaString = KString . C.pack $ fromMaybe "blockappsData" maybeBlockappsDataTopic
+
   liftIO $ putStrLn $ "########## " ++ unlines (map format blocks)
   liftIO $ putStrLn $ "########## precheck"
   blockOffsets <- getBlockOffsetsForHashes (map blockHash blocks)
   liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length blockOffsets)
-  result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
+  result <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $
             produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
 
   liftIO $ putStrLn $ "########## postcheck"
@@ -287,6 +292,18 @@ produceBlocks blocks = do
    Right x -> do
      let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
      (x::Either SomeException ()) <- try $ putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
+     return offset
+
+produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
+produceBlocks blocks = do
+  result <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $
+            produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
+
+  case result of
+   Left e -> error $ show e
+   Right x -> do
+     let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
+     putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
      return offset
 
 fetchBlocks::Offset->Kafka [Block]
@@ -302,8 +319,11 @@ fetchBlocksOneIO offset = do
 
 fetchLastBlocks::Offset->IO [Block]
 fetchLastBlocks n = do
+  let maybeStratoP2PClientTopic = M.lookup "strato-p2p-client" kafkaTopics
+      kafkaString = KString . C.pack $ fromMaybe "strato-p2p-client" maybeStratoP2PClientTopic
+
   ret <-
-    runKafka (mkKafkaState "strato-p2p-client" ("127.0.0.1", 9092)) $ do
+    runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $ do
       stateRequiredAcks .= -1
       stateWaitSize .= 1
       stateWaitTime .= 100000
@@ -323,8 +343,11 @@ fetchLastBlocks n = do
 
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
+  let maybeBlockappsDataTopic = M.lookup "blockapps-data" kafkaTopics
+      kafkaString = KString . C.pack $ fromMaybe "blockappsData" maybeBlockappsDataTopic
+
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 

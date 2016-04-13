@@ -54,7 +54,11 @@ library
                  , time
                  , transformers
                  , ansi-wl-pprint
-      		 
+                 , readline
+                 , yaml
+                 , entropy
+                 , process
+
     exposed-modules: 
                    Blockchain.Constants
                    Blockchain.Data.Address
