@@ -45,6 +45,15 @@ Block
     blockUncles [BlockData]
     deriving Show Read Eq
 
+NewBlk
+    hash SHA
+    blockData BlockData
+    receiptTransactions [Transaction]
+    blockUncles [BlockData]
+    Primary hash
+    TheHash hash
+    deriving Show Read Eq
+
 BlockTransaction
     blockId BlockId
     transaction RawTransactionId
