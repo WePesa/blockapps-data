@@ -4,6 +4,7 @@ module Blockchain.Setup (
   oneTimeSetup
   ) where
 
+import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger (runNoLoggingT,runStdoutLoggingT)
@@ -39,6 +40,7 @@ import Blockchain.Constants
 import Blockchain.EthConf
 import Blockchain.KafkaTopics
 import Blockchain.PeerUrls
+import Blockchain.Data.Blockchain
 
 data SetupDBs =
   SetupDBs {
@@ -208,12 +210,24 @@ oneTimeSetup genesisBlockName = do
           pgCfg'' = pgCfg { database = db' }
           pgConn = postgreSQLConnectionString pgCfg
           pgConn' = postgreSQLConnectionString pgCfg'
+          pgConnGlobal = postgreSQLConnectionString pgCfg { database = "blockchain" }
+
           cfg' = cfg { 
                    sqlConfig = pgCfg'', 
                    ethUniqueId = defaultEthUniqueId {
                      peerId = uniqueString
                    }
                  }
+
+      {- CONFIG: create global blockchain table if it doesn't exist -}
+
+      path <- getCurrentDirectory
+       
+      liftIO $ putStrLn $ CL.yellow ">>>> Creating Global Database (if it doesn't exist)"
+      let create = T.pack $ "CREATE DATABASE blockchain;"
+
+      _ <- try $ runNoLoggingT $ withPostgresqlConn pgConn' $ runReaderT $ rawExecute create [] :: IO (Either SomeException ())
+      createDBAndInsertBlockchain pgConnGlobal path uniqueString
 
       encodeFile ".ethereumH/ethconf.yaml" cfg'
 
