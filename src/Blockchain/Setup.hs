@@ -148,9 +148,7 @@ createKafkaTopic topic = callProcess
 topics :: [Topic']
 topics = [ "block",
            "unminedblock",
-           "blockapps-data",
-           "strato-p2p-client",
-           "queryStrato" ]
+           "blockapps-data" ]
 
 createKafkaTopics :: [Topic'] -> IO ()
 createKafkaTopics top = sequence_ . (map createKafkaTopic) $ top

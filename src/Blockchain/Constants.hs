@@ -66,14 +66,12 @@ indexOffsetPath="/indexOffset"
 
 getDataDir::IO FilePath
 getDataDir = do
-  homeDir <- getHomeDirectory
-  return $ homeDir </> ".ethereumH"
+  return $ ".ethereumH"
 
 
 getConfDir::IO FilePath
 getConfDir = do
-  homeDir <- getHomeDirectory
-  return $ homeDir </> ".ethereumH" </> "conf"
+  return $ ".ethereumH" </> "conf"
 
 dbDir::String->String
 dbDir "c" = ".ethereum"

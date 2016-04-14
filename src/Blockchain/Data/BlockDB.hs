@@ -84,6 +84,10 @@ import Control.Monad.Trans.Resource
 
 --import Debug.Trace
 
+
+blockTopic = lookupTopic "block"
+unminedBlockTopic = lookupTopic "unminedblock"
+
 rawTX2TX :: RawTransaction -> Transaction
 rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to) val dat r s v _ _ _) = (MessageTX nonce' gp gl to val dat r s v)
 rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
@@ -272,15 +276,12 @@ putBlocks blocks makeHashOne = do
 
 produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
 produceBlocks blocks = do
-  let maybeBlockappsDataTopic = M.lookup "blockapps-data" kafkaTopics
-      kafkaString = KString . C.pack $ fromMaybe "blockappsData" maybeBlockappsDataTopic
-
   liftIO $ putStrLn $ "########## " ++ unlines (map format blocks)
   liftIO $ putStrLn $ "########## precheck"
   blockOffsets <- getBlockOffsetsForHashes (map blockHash blocks)
   liftIO $ putStrLn $ "########## number of existing hashes: " ++ show (length blockOffsets)
-  result <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $
-            produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
+  result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
+            produceMessages $ map (TopicAndMessage blockTopic . makeMessage . rlpSerialize . rlpEncode) blocks
 
   liftIO $ putStrLn $ "########## postcheck"
   blockOffsets' <- getBlockOffsetsForHashes (map blockHash blocks)
@@ -294,40 +295,25 @@ produceBlocks blocks = do
      (x::Either SomeException ()) <- try $ putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
      return offset
 
-produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
-produceBlocks blocks = do
-  result <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $
-            produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
-
-  case result of
-   Left e -> error $ show e
-   Right x -> do
-     let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
-     putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
-     return offset
-
 fetchBlocks::Offset->Kafka [Block]
-fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
+fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes blockTopic
 
 fetchBlocksIO::Offset->IO (Maybe [Block])
 fetchBlocksIO offset = do
-  fmap (fmap (map (rlpDecode . rlpDeserialize))) $ fetchBytesIO "block" offset
+  fmap (fmap (map (rlpDecode . rlpDeserialize))) $ fetchBytesIO blockTopic offset
 
 fetchBlocksOneIO::Offset->IO (Maybe Block)
 fetchBlocksOneIO offset = do
-  fmap (fmap (rlpDecode . rlpDeserialize)) $ fetchBytesOneIO "block" offset
+  fmap (fmap (rlpDecode . rlpDeserialize)) $ fetchBytesOneIO blockTopic offset
 
 fetchLastBlocks::Offset->IO [Block]
 fetchLastBlocks n = do
-  let maybeStratoP2PClientTopic = M.lookup "strato-p2p-client" kafkaTopics
-      kafkaString = KString . C.pack $ fromMaybe "strato-p2p-client" maybeStratoP2PClientTopic
-
   ret <-
-    runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $ do
+    runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ do
       stateRequiredAcks .= -1
       stateWaitSize .= 1
       stateWaitTime .= 100000
-      lastOffset <- getLastOffset LatestTime 0 "block"
+      lastOffset <- getLastOffset LatestTime 0 blockTopic
       when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
       let offset = max (lastOffset - n) 0
       fetchBlocks offset
@@ -343,16 +329,13 @@ fetchLastBlocks n = do
 
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
-  let maybeBlockappsDataTopic = M.lookup "blockapps-data" kafkaTopics
-      kafkaString = KString . C.pack $ fromMaybe "blockappsData" maybeBlockappsDataTopic
-
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState kafkaString ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage unminedBlockTopic $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 
 fetchUnminedBlocks::Offset->Kafka [Block]
-fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "unminedblock"
+fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes unminedBlockTopic
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =
