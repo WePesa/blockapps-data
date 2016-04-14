@@ -41,7 +41,7 @@ data BlockHeader =
     extraData::Integer,
     mixHash::SHA,
     nonce::Word64
-    } deriving (Show)
+    } deriving (Show, Eq)
 
 instance Format BlockHeader where
   format header@(BlockHeader ph oh b sr tr rr _ d number' gl gu ts ed _ nonce') =
