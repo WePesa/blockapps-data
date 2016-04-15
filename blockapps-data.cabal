@@ -58,7 +58,7 @@ library
                  , yaml
                  , entropy
                  , process
-
+                 , hflags
     exposed-modules: 
                    Blockchain.Constants
                    Blockchain.Data.Address

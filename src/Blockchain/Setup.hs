@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Blockchain.Setup (
   oneTimeSetup
@@ -41,6 +42,13 @@ import Blockchain.EthConf
 import Blockchain.KafkaTopics
 import Blockchain.PeerUrls
 import Blockchain.Data.Blockchain
+
+import HFlags 
+
+defineFlag "u:pguser" ("" :: String) "Postgres user"
+defineFlag "p:password" ("" :: String) "Postgres password"
+defineFlag "k:kafka" ("" :: String) "Kafka bin directory"
+
 
 data SetupDBs =
   SetupDBs {
@@ -295,9 +303,9 @@ kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 
 type Topic' = String
 
-createKafkaTopic :: Topic' -> IO () 
-createKafkaTopic topic = callProcess 
-                           (kafkaPath </> "kafka-topics.sh") 
+createKafkaTopic :: FilePath -> Topic' -> IO () 
+createKafkaTopic path topic = callProcess 
+                           (path </> "kafka-topics.sh") 
                            ([ "--create",
                               "--zookeeper localhost:2181", 
                               "--replication-factor 1", 
@@ -309,8 +317,8 @@ topics = [ "block",
            "unminedblock",
            "blockapps-data" ]
 
-createKafkaTopics :: [Topic'] -> IO ()
-createKafkaTopics top = sequence_ . (map createKafkaTopic) $ top
+createKafkaTopics :: FilePath -> [Topic'] -> IO ()
+createKafkaTopics path top = sequence_ . (map (createKafkaTopic path)) $ top
 
 
 {-
@@ -327,6 +335,8 @@ createKafkaTopics top = sequence_ . (map createKafkaTopic) $ top
 
 oneTimeSetup :: String -> IO ()
 oneTimeSetup genesisBlockName = do
+  s <- $initHFlags "strato-setup"
+
   dirExists <- doesDirectoryExist ".ethereumH"
   if dirExists
     then do  
@@ -338,8 +348,21 @@ oneTimeSetup genesisBlockName = do
 
       putStrLn $ "writing config"
 
-      maybePGuser <- readline "enter a postgres user with database credentials (postgres): "
-      maybePGpass <- readline "enter password for database user: "
+      maybePGuser <- do 
+          case flags_pguser of 
+             "" -> readline "enter a postgres user with database credentials (postgres): "
+             user -> return $ (Just user)
+
+      maybePGpass <- do
+          case flags_password of 
+             "" -> readline "enter password for database user: "
+             pass -> return $ (Just pass)
+
+      maybeKafkaPath <- do
+          case flags_kafka of 
+             "" -> readline $ "enter kafka binary path (" ++ kafkaPath ++ "): "
+             pass -> return $ (Just pass)
+
       bytes <- getEntropy 20
 
       createDirectoryIfMissing True $ dbDir "h"
@@ -356,7 +379,10 @@ oneTimeSetup genesisBlockName = do
                   }
                 }
 
-     
+      let kafkaPath' = case maybeKafkaPath of
+                           Nothing -> kafkaPath
+                           Just "" -> kafkaPath
+                           Just kpath -> kpath  
      {- CONFIG: create database and write default config files-}
      
       let uniqueString = C.unpack . B16.encode $ bytes 
@@ -410,7 +436,7 @@ oneTimeSetup genesisBlockName = do
 
     {- kafkaTopics implicitly defined by ethconf.yaml above & unsafePerformIO -}
 
-      createKafkaTopics (Map.elems kafkaTopics)
+      createKafkaTopics kafkaPath' (Map.elems kafkaTopics)
   
      {- CONFIG: define tables and indices -}
      {- connStr implicitly defined by ethconf.yaml above, & unsafePerformIO -}  
