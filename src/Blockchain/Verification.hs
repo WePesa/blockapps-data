@@ -18,10 +18,13 @@ import Blockchain.SHA
 
 
 transactionsVerificationValue::[Transaction]->MP.SHAPtr
-transactionsVerificationValue _ = MP.emptyTriePtr
+transactionsVerificationValue = MP.sha2SHAPtr . listToRLPVerificationValue
 
 ommersVerificationValue::[BlockData]->SHA
-ommersVerificationValue = hash ∘ rlpSerialize ∘ RLPArray ∘  map rlpEncode
+ommersVerificationValue = listToRLPVerificationValue 
 
 receiptsVerificationValue::()->MP.SHAPtr
 receiptsVerificationValue _ = MP.emptyTriePtr
+
+listToRLPVerificationValue :: (RLPSerializable a) => [a] -> SHA
+listToRLPVerificationValue = hash ∘ rlpSerialize ∘ RLPArray ∘ map rlpEncode
