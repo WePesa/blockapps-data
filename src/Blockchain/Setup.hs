@@ -42,13 +42,14 @@ import Blockchain.EthConf
 import Blockchain.KafkaTopics
 import Blockchain.PeerUrls
 import Blockchain.Data.Blockchain
+import Blockchain.APIFiles
 
 import HFlags 
 
 defineFlag "u:pguser" ("" :: String) "Postgres user"
 defineFlag "p:password" ("" :: String) "Postgres password"
 defineFlag "k:kafka" ("" :: String) "Kafka bin directory"
-
+defineFlag "s:superfluous" ("" :: String) "Superfluous parameter"
 
 data SetupDBs =
   SetupDBs {
@@ -338,6 +339,7 @@ oneTimeSetup genesisBlockName = do
   s <- $initHFlags "strato-setup"
 
   dirExists <- doesDirectoryExist ".ethereumH"
+
   if dirExists
     then do  
         putStrLn ".ethereumH exists, unsafe to run setup"
@@ -367,6 +369,8 @@ oneTimeSetup genesisBlockName = do
 
       createDirectoryIfMissing True $ dbDir "h"
 
+
+
       let user' =  case maybePGuser of 
                         Nothing -> "postgres"
                         Just "" -> "postgres"
@@ -383,7 +387,7 @@ oneTimeSetup genesisBlockName = do
                            Nothing -> kafkaPath
                            Just "" -> kafkaPath
                            Just kpath -> kpath  
-     {- CONFIG: create database and write default config files-}
+     {- CONFIG: create database and write default config files, including strato-api -}
      
       let uniqueString = C.unpack . B16.encode $ bytes 
           pgCfg = sqlConfig cfg
@@ -402,6 +406,10 @@ oneTimeSetup genesisBlockName = do
                    }
                  }
 
+      inflateDir stratoAPICerts
+      inflateDir stratoAPIStaticDir
+      inflateDir stratoAPIConfigDir
+
       {- CONFIG: create global blockchain table if it doesn't exist -}
 
       path <- getCurrentDirectory
@@ -412,8 +420,8 @@ oneTimeSetup genesisBlockName = do
       _ <- try $ runNoLoggingT $ withPostgresqlConn pgConn' $ runReaderT $ rawExecute create [] :: IO (Either SomeException ())
       createDBAndInsertBlockchain pgConnGlobal path uniqueString
 
-      encodeFile ".ethereumH/ethconf.yaml" cfg'
-      encodeFile ".ethereumH/peers.yaml" defaultPeers
+      encodeFile (".ethereumH" </> "ethconf.yaml") cfg'
+      encodeFile (".ethereumH" </> "peers.yaml") defaultPeers
 
 
       liftIO $ putStrLn $ CL.yellow ">>>> Creating Database " ++ db'
@@ -432,7 +440,7 @@ oneTimeSetup genesisBlockName = do
                                  Map.empty 
                                  topics
 
-      encodeFile ".ethereumH/topics.yaml" uniqueTopicMap
+      encodeFile (".ethereumH" </> "topics.yaml") uniqueTopicMap
 
     {- kafkaTopics implicitly defined by ethconf.yaml above & unsafePerformIO -}
 
