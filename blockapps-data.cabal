@@ -22,6 +22,7 @@ library
     build-depends: 
                    base >= 4 && < 5
                  , aeson
+                 , base-unicode-symbols
                  , base16-bytestring
                  , binary
                  , blockapps-util
@@ -92,6 +93,7 @@ library
                    Blockchain.DB.SQLDB   
                    Blockchain.DB.StateDB
                    Blockchain.DB.StorageDB
+                   Blockchain.Verification
                    Blockchain.Setup
                    Blockchain.Data.Blockchain
     ghc-options: -Wall -O2
