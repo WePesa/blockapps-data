@@ -238,15 +238,13 @@ putBlocks blocks makeHashOne = do
            _ -> error "DB has multiple blocks with the same hash"
 
         insertOrUpdate b rawTX  = do
-            (txs :: [Entity RawTransaction])
-                 <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )]
-                                   [ ]
-            case txs of
-                [] -> SQL.insert rawTX
-                [tx] -> do
-                  SQL.update (SQL.entityKey tx) [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
-                  return $ SQL.entityKey tx
-                _ -> error "DB has multiple transactions with the same hash"
+          ret <- SQL.insertBy rawTX
+          key <-
+            case ret of
+             Left x -> return $ entityKey x
+             Right x -> return x
+          SQL.update key [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
+          return key
 
 produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
 produceBlocks blocks = do
