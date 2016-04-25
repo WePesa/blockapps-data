@@ -76,6 +76,7 @@ library
                    Blockchain.Data.PersistTypes
                    Blockchain.Data.RawTransaction
                    Blockchain.Data.Transaction
+                   Blockchain.Data.TransactionDef
                    Blockchain.Data.TransactionReceipt
                    Blockchain.Data.TransactionResult
                    Blockchain.DBM

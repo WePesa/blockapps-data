@@ -10,7 +10,7 @@ import Database.Persist.Sql
 import Database.Persist.TH
 
 import Blockchain.Data.Address
-import Blockchain.Data.Transaction
+--import Blockchain.Data.Transaction
 import Blockchain.ExtWord
 import Blockchain.SHA
 import Blockchain.Database.MerklePatricia
@@ -22,7 +22,6 @@ import Data.Text.Encoding
 import Crypto.Types.PubKey.ECC
 import Numeric
 
-derivePersistField "Transaction"
 derivePersistField "Integer"
 derivePersistField "Point"
 

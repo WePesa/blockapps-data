@@ -21,6 +21,10 @@ module Blockchain.Data.Transaction (
               transactionData,
               transactionInit), -}
   Transaction(..),
+  txAndTime2RawTX,
+  tx2RawTXAndTime,
+  rawTX2TX,
+  insertTXIfNew,
   createMessageTX,
   createContractCreationTX,
   isMessageTX,
@@ -29,7 +33,13 @@ module Blockchain.Data.Transaction (
   transactionHash
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
+
+import Data.Time.Clock
+import Data.Time.Clock.POSIX
+
+import Data.Maybe
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as B16
@@ -41,7 +51,10 @@ import Text.PrettyPrint.ANSI.Leijen
 import qualified Blockchain.Colors as CL
 import Blockchain.Data.Address
 import Blockchain.Data.Code
+import Blockchain.Data.RawTransaction
 import Blockchain.Data.RLP
+import Blockchain.Data.TransactionDef
+import Blockchain.DB.SQLDB
 import Blockchain.Format
 import Blockchain.SHA
 import Blockchain.Util
@@ -52,6 +65,30 @@ import Network.Haskoin.Internals hiding (Address)
 import Blockchain.ExtendedECDSA
 
 import GHC.Generics
+
+
+rawTX2TX :: RawTransaction -> Transaction
+rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to') val dat r s v _ _ _) = (MessageTX nonce' gp gl to' val dat r s v)
+rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
+
+txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
+txAndTime2RawTX fromBlock tx blkNum time =
+  case tx of
+    (MessageTX nonce' gp gl to' val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to') val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
+    (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+  where
+    signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
+
+tx2RawTXAndTime :: (MonadIO m) => Bool -> Transaction -> m RawTransaction
+tx2RawTXAndTime fromBlock tx = do
+  time <- liftIO getCurrentTime
+  return $ txAndTime2RawTX fromBlock tx (-1) time
+
+insertTXIfNew::HasSQLDB m=>[Transaction]->m ()
+insertTXIfNew txs = do
+  rawTXs <- forM txs $ tx2RawTXAndTime False
+  insertRawTXIfNew $ map id rawTXs
 
 addLeadingZerosTo64::String->String
 addLeadingZerosTo64 x = replicate (64 - length x) '0' ++ x
@@ -124,29 +161,6 @@ whoSignedThisTransaction t =
           xSignature = ExtendedSignature (Signature (fromInteger $ transactionR t) (fromInteger $ transactionS t)) (0x1c == transactionV t)
           SHA theHash = hash $ rlpSerialize $ partialRLPEncode t
 
-
-data Transaction = 
-  MessageTX {
-    transactionNonce::Integer,
-    transactionGasPrice::Integer,
-    transactionGasLimit::Integer,
-    transactionTo::Address,
-    transactionValue::Integer,
-    transactionData::B.ByteString,
-    transactionR::Integer,
-    transactionS::Integer,
-    transactionV::Word8
-   } |
-  ContractCreationTX {
-    transactionNonce::Integer,
-    transactionGasPrice::Integer,
-    transactionGasLimit::Integer,
-    transactionValue::Integer,
-    transactionInit::Code,
-    transactionR::Integer,
-    transactionS::Integer,
-    transactionV::Word8
-    } deriving (Show, Read, Eq, Ord, Generic)
 
 isMessageTX::Transaction->Bool
 isMessageTX MessageTX{} = True

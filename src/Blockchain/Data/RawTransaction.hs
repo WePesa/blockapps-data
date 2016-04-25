@@ -12,11 +12,31 @@
 {-# LANGUAGE DeriveGeneric              #-}
     
 module Blockchain.Data.RawTransaction (
-  RawTransaction(..)
+  RawTransaction(..),
+  insertRawTXIfNew
   ) where
 
 
+import Control.Monad
+import Control.Monad.Trans.Resource
+import qualified Database.Persist.Postgresql as SQL
+
 import Blockchain.Data.DataDefs
+import Blockchain.DB.SQLDB
+
+insertRawTXIfNew::HasSQLDB m=>[RawTransaction]->m ()
+insertRawTXIfNew rawTXs= do
+  db <- getSQLDB
+  runResourceT $
+    flip SQL.runSqlPool db $
+    forM_ rawTXs $ \rawTX -> do
+      txs <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )] [ ]
+      case txs of
+       [] -> do
+         SQL.insert rawTX
+         return ()
+       [tx] -> return ()
+       _ -> error "DB has multiple transactions with the same hash"
 
 {-
 instance Format RawTransaction where

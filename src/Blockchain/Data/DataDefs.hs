@@ -13,6 +13,8 @@
     
 module Blockchain.Data.DataDefs where
 
+
+import qualified Data.ByteString as B
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Quasi
@@ -23,9 +25,10 @@ import Data.Text
 import Data.Time
 
 import Blockchain.Data.Address
+import Blockchain.Data.Code
 import Blockchain.Data.PersistTypes ()
 import Blockchain.MiscJSON ()
-import Blockchain.Data.Transaction
+import Blockchain.Data.TransactionDef
 import Blockchain.Database.MerklePatricia
 
 import qualified Data.ByteString as BS

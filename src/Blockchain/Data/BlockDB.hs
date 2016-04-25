@@ -25,8 +25,6 @@ module Blockchain.Data.BlockDB (
   fetchLastBlocks,
   produceUnminedBlocks,
   fetchUnminedBlocks,
-  rawTX2TX,
-  tx2RawTXAndTime,
   nextDifficulty,
   homesteadNextDifficulty,
   createBlockFromHeaderAndBody
@@ -81,24 +79,6 @@ import Control.Monad.State
 import Control.Monad.Trans.Resource
 
 --import Debug.Trace
-
-rawTX2TX :: RawTransaction -> Transaction
-rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to') val dat r s v _ _ _) = (MessageTX nonce' gp gl to' val dat r s v)
-rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
-
-txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
-txAndTime2RawTX fromBlock tx blkNum time =
-  case tx of
-    (MessageTX nonce' gp gl to' val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to') val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
-    (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
-    (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
-  where
-    signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
-
-tx2RawTXAndTime :: (MonadIO m) => Bool -> Transaction -> m RawTransaction
-tx2RawTXAndTime fromBlock tx = do
-  time <- liftIO getCurrentTime
-  return $ txAndTime2RawTX fromBlock tx (-1) time
 
 {-calcTotalDifficulty :: (HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
                        Block -> BlockId -> m Integer
