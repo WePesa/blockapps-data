@@ -29,15 +29,8 @@ insertRawTXIfNew rawTXs= do
   db <- getSQLDB
   runResourceT $
     flip SQL.runSqlPool db $
-    forM_ rawTXs $ \rawTX -> do
-      txs <- SQL.selectList [ RawTransactionTxHash SQL.==. (rawTransactionTxHash rawTX )] [ ]
-      case txs of
-       [] -> do
-         SQL.insert rawTX
-         return ()
-       [tx] -> return ()
-       _ -> error "DB has multiple transactions with the same hash"
-
+    forM_ rawTXs SQL.insertBy
+      
 {-
 instance Format RawTransaction where
   format RawTransaction{rawTransactionNonce=n,

@@ -89,6 +89,7 @@ RawTransaction
     blockNumber Int
     txHash SHA
     fromBlock Bool
+    UniqueTXHash txHash
     deriving Show Read Eq    
 
 PPeer 
