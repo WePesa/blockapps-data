@@ -13,10 +13,13 @@
     
 module Blockchain.Data.RawTransaction (
   RawTransaction(..),
-  insertRawTXIfNew
+  insertRawTXIfNew,
+  insertRawTXIfNew'
   ) where
 
 
+import Control.Exception.Lifted
+import Control.Monad.IO.Class
 import Control.Monad
 import Control.Monad.Trans.Resource
 import qualified Database.Persist.Postgresql as SQL
@@ -27,10 +30,16 @@ import Blockchain.DB.SQLDB
 insertRawTXIfNew::HasSQLDB m=>[RawTransaction]->m ()
 insertRawTXIfNew rawTXs= do
   db <- getSQLDB
-  runResourceT $
-    flip SQL.runSqlPool db $
-    forM_ rawTXs SQL.insertBy
-      
+  runResourceT $ SQL.runSqlPool (insertRawTXIfNew' rawTXs) db
+
+--insertRawTXIfNew'::[RawTransaction]->m ()
+insertRawTXIfNew' rawTXs= do
+  forM_ rawTXs $ \rawTX -> do
+    ret <- try $ SQL.insertBy rawTX
+    case ret of
+     Left e -> liftIO $ putStrLn $ "TX already inserted: " ++ show (e::SomeException)
+     Right _ -> return ()
+
 {-
 instance Format RawTransaction where
   format RawTransaction{rawTransactionNonce=n,

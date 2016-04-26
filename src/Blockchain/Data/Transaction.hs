@@ -25,6 +25,7 @@ module Blockchain.Data.Transaction (
   tx2RawTXAndTime,
   rawTX2TX,
   insertTXIfNew,
+  insertTXIfNew',
   createMessageTX,
   createContractCreationTX,
   isMessageTX,
@@ -85,10 +86,19 @@ tx2RawTXAndTime fromBlock tx = do
   time <- liftIO getCurrentTime
   return $ txAndTime2RawTX fromBlock tx (-1) time
 
-insertTXIfNew::HasSQLDB m=>[Transaction]->m ()
-insertTXIfNew txs = do
-  rawTXs <- forM txs $ tx2RawTXAndTime False
+insertTXIfNew::HasSQLDB m=>Maybe Integer->[Transaction]->m ()
+insertTXIfNew blockNum txs = do
+  time <- liftIO getCurrentTime
+  let rawTXs =
+        map (\tx -> txAndTime2RawTX (isJust blockNum) tx (fromMaybe (-1) blockNum) time) txs
   insertRawTXIfNew $ map id rawTXs
+
+--insertTXIfNew'::HasSQLDB m=>Maybe Integer->[Transaction]->m ()
+insertTXIfNew' blockNum txs = do
+  time <- liftIO getCurrentTime
+  let rawTXs =
+        map (\tx -> txAndTime2RawTX (isJust blockNum) tx (fromMaybe (-1) blockNum) time) txs
+  insertRawTXIfNew' $ map id rawTXs
 
 addLeadingZerosTo64::String->String
 addLeadingZerosTo64 x = replicate (64 - length x) '0' ++ x

@@ -213,22 +213,18 @@ putBlocks blocks makeHashOne = do
   db <- getSQLDB
   runResourceT $
     flip SQL.runSqlPool db $
-    forM blocksAndHashes $ actions dm
+    forM blocksAndHashes $ \(b, hash') -> do
+      insertTXIfNew' (Just $ blockDataNumber $ blockBlockData b) (blockReceiptTransactions b)
+
+      existingBlockData <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b] []
       
-  where actions dm (b, hash') = do
-          --liftIO $ putStrLn $ "checking if block with hash exists: " ++ format (blockHash b)
-          existingBlockData
-                 <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b]
-                                   [ ]
-          case existingBlockData of
+      case existingBlockData of
            [] -> do
              --liftIO $ putStrLn "block is new"
              blkId <- SQL.insert $ b
              toInsert <- lift $ lift $ blk2BlkDataRef dm (b, hash') blkId makeHashOne
-             time <- liftIO getCurrentTime
              forM_ (blockReceiptTransactions b) $ \tx -> do
-               let rawTX = txAndTime2RawTX True tx (blockDataNumber (blockBlockData b)) time
-               txID <- insertOrUpdate b rawTX
+               txID <- updateBlockNumber b $ transactionHash tx
                SQL.insert $ BlockTransaction blkId txID
              blkDataRefId <- SQL.insert $ toInsert
              return (blkId, blkDataRefId)
@@ -237,12 +233,13 @@ putBlocks blocks makeHashOne = do
              return (blockDataRefBlockId $ SQL.entityVal bd, SQL.entityKey bd)
            _ -> error "DB has multiple blocks with the same hash"
 
-        insertOrUpdate b rawTX  = do
-          ret <- SQL.insertBy rawTX
+  where
+    updateBlockNumber b txHash  = do
+          ret <- SQL.getBy (UniqueTXHash txHash)
           key <-
             case ret of
-             Left x -> return $ entityKey x
-             Right x -> return x
+             Just x -> return $ entityKey x
+             Nothing -> error "error in putBlocks: no transaction exists in the DB, even though I just inserted it"
           SQL.update key [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
           return key
 
