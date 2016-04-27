@@ -34,29 +34,24 @@ module Blockchain.Data.Transaction (
   transactionHash
   ) where
 
-import Control.Monad
 import Control.Monad.IO.Class
-
-import Data.Time.Clock
-import Data.Time.Clock.POSIX
-
-import Data.Maybe
-
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Resource
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Internal
-import Data.Word
+import Data.Maybe
+import Data.Time.Clock
+import qualified Database.Persist.Postgresql as SQL
 import Numeric
-import Text.PrettyPrint.ANSI.Leijen
 
-import qualified Blockchain.Colors as CL
 import Blockchain.Data.Address
 import Blockchain.Data.Code
+import Blockchain.Data.DataDefs
 import Blockchain.Data.RawTransaction
 import Blockchain.Data.RLP
 import Blockchain.Data.TransactionDef
 import Blockchain.DB.SQLDB
-import Blockchain.Format
 import Blockchain.SHA
 import Blockchain.Util
 
@@ -64,8 +59,6 @@ import Blockchain.Util
 
 import Network.Haskoin.Internals hiding (Address)
 import Blockchain.ExtendedECDSA
-
-import GHC.Generics
 
 
 rawTX2TX :: RawTransaction -> Transaction
@@ -93,7 +86,8 @@ insertTXIfNew blockNum txs = do
         map (\tx -> txAndTime2RawTX (isJust blockNum) tx (fromMaybe (-1) blockNum) time) txs
   insertRawTXIfNew $ map id rawTXs
 
---insertTXIfNew'::HasSQLDB m=>Maybe Integer->[Transaction]->m ()
+insertTXIfNew'::(MonadBaseControl IO m, MonadIO m)=>
+                Maybe Integer->[Transaction]->ReaderT SQL.SqlBackend m ()
 insertTXIfNew' blockNum txs = do
   time <- liftIO getCurrentTime
   let rawTXs =
@@ -179,100 +173,6 @@ isMessageTX _ = False
 isContractCreationTX::Transaction->Bool
 isContractCreationTX ContractCreationTX{} = True
 isContractCreationTX _ = False
-
-
-instance Format Transaction where
-  format MessageTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionTo=to', transactionValue=v, transactionData=d} =
-    CL.blue "Message Transaction" ++
-    tab (
-      "\n" ++
-      "tNonce: " ++ show n ++ "\n" ++
-      "gasPrice: " ++ show gp ++ "\n" ++
-      "tGasLimit: " ++ show gl ++ "\n" ++
-      "to: " ++ show (pretty to') ++ "\n" ++
-      "value: " ++ show v ++ "\n" ++
-      "tData: " ++ tab ("\n" ++ format d) ++ "\n")
-  format ContractCreationTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionValue=v, transactionInit=theCode} =
-    CL.blue "Contract Creation Transaction" ++
-    tab (
-      "\n" ++
-      "tNonce: " ++ show n ++ "\n" ++
-      "gasPrice: " ++ show gp ++ "\n" ++
-      "tGasLimit: " ++ show gl ++ "\n" ++
-      "value: " ++ show v ++ "\n" ++
-      "tInit: " ++ tab (codeToString theCode) ++ "\n")
-    where
-      codeToString (Code init') = format init'
-      codeToString (PrecompiledCode _) = "<precompiledCode>"
-
---partialRLP(De|En)code are used for the signing algorithm
-partialRLPDecode::RLPObject->Transaction
-partialRLPDecode (RLPArray [n, gp, gl, RLPString "", val, i, _, _, _]) = --Note- Address 0 /= Address 000000....  Only Address 0 yields a ContractCreationTX
-    ContractCreationTX {
-      transactionNonce = rlpDecode n,
-      transactionGasPrice = rlpDecode gp,
-      transactionGasLimit = rlpDecode gl,
-      transactionValue = rlpDecode val,
-      transactionInit = rlpDecode i,
-      transactionR = error "transactionR not initialized in partialRLPDecode",
-      transactionS = error "transactionS not initialized in partialRLPDecode",
-      transactionV = error "transactionV not initialized in partialRLPDecode"
-      }
-partialRLPDecode (RLPArray [n, gp, gl, toAddr, val, i, _, _, _]) =
-    MessageTX {
-      transactionNonce = rlpDecode n,
-      transactionGasPrice = rlpDecode gp,
-      transactionGasLimit = rlpDecode gl,
-      transactionTo = rlpDecode toAddr,
-      transactionValue = rlpDecode val,
-      transactionData = rlpDecode i,
-      transactionR = error "transactionR not initialized in partialRLPDecode",
-      transactionS = error "transactionS not initialized in partialRLPDecode",
-      transactionV = error "transactionV not initialized in partialRLPDecode"
-      }
-partialRLPDecode x = error ("rlp object has wrong format in call to partialRLPDecode: " ++ show x)
-
-partialRLPEncode::Transaction->RLPObject
-partialRLPEncode MessageTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionTo=to', transactionValue=v, transactionData=d} =
-      RLPArray [
-        rlpEncode n,
-        rlpEncode gp,
-        rlpEncode gl,
-        rlpEncode to',
-        rlpEncode v,
-        rlpEncode d
-        ]
-partialRLPEncode ContractCreationTX{transactionNonce=n, transactionGasPrice=gp, transactionGasLimit=gl, transactionValue=v, transactionInit=init'} =
-      RLPArray [
-        rlpEncode n,
-        rlpEncode gp,
-        rlpEncode gl,
-        rlpEncode (0::Integer),
-        rlpEncode v,
-        rlpEncode init'
-        ]
-
-
-instance RLPSerializable Transaction where
-  rlpDecode (RLPArray [n, gp, gl, toAddr, val, i, vVal, rVal, sVal]) =
-    partial {
-      transactionV = fromInteger $ rlpDecode vVal,
-      transactionR = rlpDecode rVal,
-      transactionS = rlpDecode sVal
-      }
-        where
-          partial = partialRLPDecode $ RLPArray [n, gp, gl, toAddr, val, i, RLPScalar 0, RLPScalar 0, RLPScalar 0]
-  rlpDecode x = error ("rlp object has wrong format in call to rlpDecodeq: " ++ show x)
-
-  rlpEncode t =
-      RLPArray [
-        n, gp, gl, toAddr, val, i,
-        rlpEncode $ toInteger $ transactionV t,
-        rlpEncode $ transactionR t,
-        rlpEncode $ transactionS t
-        ]
-      where
-        (RLPArray [n, gp, gl, toAddr, val, i]) = partialRLPEncode t
 
 
 transactionHash::Transaction->SHA

@@ -26,6 +26,7 @@ import Blockchain.DB.CodeDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.StateDB
 import Blockchain.DB.SQLDB
+import Blockchain.Stream.VMEvent
 
 --import Debug.Trace
 
@@ -89,7 +90,7 @@ initializeGenesisBlock genesisBlockName = do
   
   genesisBlock <- genesisInfoToGenesisBlock theJSON
 
-  _ <- produceBlocks [genesisBlock]
+  _ <- produceVMEvents [ChainBlock genesisBlock]
             
   [(genBId, _)] <- putBlocks [genesisBlock] False
   genAddrStates <- getAllAddressStates
