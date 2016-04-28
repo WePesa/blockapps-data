@@ -18,21 +18,10 @@ module Blockchain.Data.BlockDB (
   blockHash,
   getBlock,
   putBlocks,
-  produceBlocks,
-  fetchBlocks,
-  fetchBlocksIO,
-  fetchBlocksOneIO,
-  fetchLastBlocks,
-  produceUnminedBlocks,
-  fetchUnminedBlocks,
   nextDifficulty,
   homesteadNextDifficulty,
   createBlockFromHeaderAndBody
 ) where 
-
-import Control.Lens
-
-import Control.Exception.Lifted
 
 import Database.Persist hiding (get)
 import qualified Database.Persist.Postgresql as SQL
@@ -49,15 +38,10 @@ import qualified Data.Set as S
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 
-import Network.Kafka
-import Network.Kafka.Producer
-import Network.Kafka.Protocol hiding (Key)
-
 import Numeric
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
 import Blockchain.Constants
-import Blockchain.Data.Address
 import Blockchain.Data.BlockHeader
 import qualified Blockchain.Colors as CL
 
@@ -65,15 +49,11 @@ import Blockchain.DB.SQLDB
 
 import Blockchain.ExtWord
 import Blockchain.Format
-import Blockchain.DB.KafkaTools
 import Blockchain.Data.RLP
-import Blockchain.Data.BlockOffset
 import Blockchain.SHA
 import Blockchain.Util
-import Blockchain.Data.RawTransaction
 import Blockchain.Data.Transaction
 import Blockchain.Data.DataDefs
-import Blockchain.Data.Code
 
 import Control.Monad.State
 import Control.Monad.Trans.Resource
@@ -242,60 +222,6 @@ putBlocks blocks makeHashOne = do
              Nothing -> error "error in putBlocks: no transaction exists in the DB, even though I just inserted it"
           SQL.update key [RawTransactionBlockNumber SQL.=. fromIntegral (blockDataNumber (blockBlockData b))]
           return key
-
-produceBlocks::(HasSQLDB m, MonadIO m)=>[Block]->m Offset
-produceBlocks blocks = do
-  result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
-            produceMessages $ map (TopicAndMessage "block" . makeMessage . rlpSerialize . rlpEncode) blocks
-
-  case result of
-   Left e -> error $ show e
-   Right x -> do
-     let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
-     (x::Either SomeException ()) <- try $ putBlockOffsets $ map (\(b, o) -> BlockOffset (fromIntegral o) (blockDataNumber $ blockBlockData b) (blockHash b)) $ zip blocks [offset..]
-     return offset
-
-fetchBlocks::Offset->Kafka [Block]
-fetchBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "block"
-
-fetchBlocksIO::Offset->IO (Maybe [Block])
-fetchBlocksIO offset = do
-  fmap (fmap (map (rlpDecode . rlpDeserialize))) $ fetchBytesIO "block" offset
-
-fetchBlocksOneIO::Offset->IO (Maybe Block)
-fetchBlocksOneIO offset = do
-  fmap (fmap (rlpDecode . rlpDeserialize)) $ fetchBytesOneIO "block" offset
-
-fetchLastBlocks::Offset->IO [Block]
-fetchLastBlocks n = do
-  ret <-
-    runKafka (mkKafkaState "strato-p2p-client" ("127.0.0.1", 9092)) $ do
-      stateRequiredAcks .= -1
-      stateWaitSize .= 1
-      stateWaitTime .= 100000
-      lastOffset <- getLastOffset LatestTime 0 "block"
-      when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
-      let offset = max (lastOffset - n) 0
-      fetchBlocks offset
-
-  case ret of
-    Left e -> error $ show e
-    Right v -> return v
-
-
-
-
-
-
-produceUnminedBlocks::MonadIO m=>[Block]->m ()
-produceUnminedBlocks blocks = do
-  forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
-    --liftIO $ print result
-    return ()
-
-fetchUnminedBlocks::Offset->Kafka [Block]
-fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "unminedblock"
 
 instance Format Block where
   format b@Block{blockBlockData=bd, blockReceiptTransactions=receipts, blockBlockUncles=uncles} =

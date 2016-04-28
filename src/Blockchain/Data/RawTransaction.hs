@@ -21,6 +21,7 @@ module Blockchain.Data.RawTransaction (
 import Control.Exception.Lifted
 import Control.Monad.IO.Class
 import Control.Monad
+import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
 import qualified Database.Persist.Postgresql as SQL
 
@@ -32,7 +33,8 @@ insertRawTXIfNew rawTXs= do
   db <- getSQLDB
   runResourceT $ SQL.runSqlPool (insertRawTXIfNew' rawTXs) db
 
---insertRawTXIfNew'::[RawTransaction]->m ()
+insertRawTXIfNew'::(MonadBaseControl IO m, MonadIO m)=>
+                   [RawTransaction]->ReaderT (SQL.PersistEntityBackend RawTransaction) m ()
 insertRawTXIfNew' rawTXs= do
   forM_ rawTXs $ \rawTX -> do
     ret <- try $ SQL.insertBy rawTX

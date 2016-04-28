@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Blockchain.DB.KafkaTools (
+module Blockchain.Stream.Raw (
   fetchBytes,
   fetchBytesIO,
   fetchBytesOneIO

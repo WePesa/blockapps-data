@@ -2,11 +2,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Blockchain.Data.GenesisInfo (
-  GenesisInfo(..)
+  GenesisInfo(..),
+  defaultGenesisInfo
   ) where
 
 import Data.Aeson
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Base16 as B16
 import Data.Time
 import Data.Word
 
@@ -33,6 +36,26 @@ data GenesisInfo =
     genesisInfoMixHash::SHA,
     genesisInfoNonce::Word64
 } deriving (Show)
+
+
+defaultGenesisInfo =
+  GenesisInfo { 
+    genesisInfoParentHash = SHA 0,
+    genesisInfoUnclesHash = SHA 13478047122767188135818125966132228187941283477090363246179690878162135454535,
+    genesisInfoCoinbase = Address 0,
+    genesisInfoAccountInfo = [],
+    genesisInfoTransactionsRoot = SHAPtr . fst . B16.decode $ "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+    genesisInfoReceiptsRoot = SHAPtr . fst . B16.decode $ "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+    genesisInfoLogBloom = B.replicate 512 0,
+    genesisInfoDifficulty = 131072,
+    genesisInfoNumber = 0,
+    genesisInfoGasLimit = 3141592,
+    genesisInfoGasUsed = 0,
+    genesisInfoTimestamp = read "1970-01-01 00:00:00 UTC" :: UTCTime,
+    genesisInfoExtraData = 0,
+    genesisInfoMixHash = SHA 0, 
+    genesisInfoNonce = 42
+}
 
 instance FromJSON GenesisInfo where
   parseJSON (Object o) =
