@@ -55,6 +55,7 @@ library
                  , time
                  , transformers
                  , ansi-wl-pprint
+                 , entropy
       		 
     exposed-modules: 
                    Blockchain.Constants
@@ -92,6 +93,7 @@ library
                    Blockchain.DB.StorageDB
                    Blockchain.Verification
                    Blockchain.Setup
+                   Blockchain.GenesisBlockSetup
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
@@ -107,4 +109,16 @@ executable strato-setup
                  , hflags
     buildable: True
     main-is: Main.hs
+    hs-source-dirs: exec_src
+
+executable genesis-setup
+    default-language: Haskell98
+    ghc-options: -Wall -O2
+    build-depends: 
+                   base >= 4 && < 5
+                 , blockapps-data
+                 , blockapps-util
+                 , hflags
+    buildable: True
+    main-is: GenesisSetup.hs
     hs-source-dirs: exec_src
