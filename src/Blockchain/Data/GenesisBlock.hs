@@ -99,4 +99,3 @@ initializeGenesisBlock genesisBlockName = do
 
   putBestBlockInfo (blockHash genesisBlock) (blockBlockData genesisBlock)
   putBestIndexBlockInfo genBId
-
