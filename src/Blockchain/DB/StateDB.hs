@@ -14,10 +14,10 @@ type StateDB = MP.MPDB
 class MonadResource m=>
       HasStateDB m where
   getStateDB::Monad m=>m MP.MPDB
-  setStateDBStateRoot::Monad m=>MP.SHAPtr->m ()
+  setStateDBStateRoot::Monad m=>MP.StateRoot->m ()
 
 
-getStateRoot::HasStateDB m=>m MP.SHAPtr
+getStateRoot::HasStateDB m=>m MP.StateRoot
 getStateRoot = do
   db <- getStateDB
   return $ MP.stateRoot db

@@ -68,12 +68,12 @@ instance PersistField Word512 where
 instance PersistFieldSql Word512 where
   sqlType _ = SqlOther $ T.pack "varchar(128)" 
 
-instance PersistField SHAPtr where
-  toPersistValue (SHAPtr s) = PersistText . decodeUtf8 . B16.encode $ s
-  fromPersistValue (PersistText s) = Right . SHAPtr . fst . B16.decode . encodeUtf8 $ s
-  fromPersistValue _ = Left $ "SHAPtr must be persisted as PersistText"
+instance PersistField StateRoot where
+  toPersistValue (StateRoot s) = PersistText . decodeUtf8 . B16.encode $ s
+  fromPersistValue (PersistText s) = Right . StateRoot . fst . B16.decode . encodeUtf8 $ s
+  fromPersistValue _ = Left $ "StateRoot must be persisted as PersistText"
 
-instance PersistFieldSql SHAPtr where
+instance PersistFieldSql StateRoot where
   sqlType _ = SqlOther $ T.pack "varchar(64)" 
 
 {-

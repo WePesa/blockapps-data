@@ -34,7 +34,7 @@ import GHC.Generics
 type SqlDbM m = SQL.SqlPersistT m
 
 sqlDiff :: (HasSQLDB m, HasCodeDB m, HasStateDB m, HasHashDB m, MonadResource m, MonadBaseControl IO m)=>
-           Integer -> SHAPtr -> SHAPtr -> m ()
+           Integer -> StateRoot -> StateRoot -> m ()
 sqlDiff blkNum oldAddrs newAddrs = do
   db <- getStateDB
   diffAddrs <- addrDbDiff db oldAddrs newAddrs
@@ -54,7 +54,7 @@ data AddrDiffOp =
 
 instance ToJSON AddrDiffOp
 
-addrDbDiff :: (HasStateDB m, HasHashDB m, MonadResource m)=>MPDB -> SHAPtr -> SHAPtr -> m [AddrDiffOp]
+addrDbDiff :: (HasStateDB m, HasHashDB m, MonadResource m)=>MPDB -> StateRoot -> StateRoot -> m [AddrDiffOp]
 addrDbDiff db ptr1 ptr2 = do
   diffs <- Diff.dbDiff db ptr1 ptr2
   mapM addrConvert diffs
@@ -121,7 +121,7 @@ data StorageDiffOp =
 
 instance ToJSON StorageDiffOp
 
-storageDbDiff :: (HasHashDB m, MonadResource m)=>MPDB -> SHAPtr -> SHAPtr -> m [StorageDiffOp]
+storageDbDiff :: (HasHashDB m, MonadResource m)=>MPDB -> StateRoot -> StateRoot -> m [StorageDiffOp]
 storageDbDiff db ptr1 ptr2 = do
   diffs <- Diff.dbDiff db ptr1 ptr2
   mapM storageConvert diffs

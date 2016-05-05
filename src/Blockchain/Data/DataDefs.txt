@@ -2,9 +2,9 @@ BlockData
     parentHash SHA
     unclesHash SHA
     coinbase Address
-    stateRoot SHAPtr
-    transactionsRoot SHAPtr
-    receiptsRoot SHAPtr
+    stateRoot StateRoot
+    transactionsRoot StateRoot
+    receiptsRoot StateRoot
     logBloom BS.ByteString
     difficulty Integer sqltype=numeric(1000,0)
     number Integer sqltype=numeric(1000,0)
@@ -20,9 +20,9 @@ BlockDataRef
     parentHash SHA
     unclesHash SHA
     coinbase Address
-    stateRoot SHAPtr
-    transactionsRoot SHAPtr
-    receiptsRoot SHAPtr
+    stateRoot StateRoot
+    transactionsRoot StateRoot
+    receiptsRoot StateRoot
     logBloom BS.ByteString
     difficulty Integer sqltype=numeric(1000,0)
     number Integer sqltype=numeric(1000,0)
@@ -61,7 +61,7 @@ BlockTransaction
 AddressState 
     nonce Integer sqltype=numeric(1000,0)
     balance Integer sqltype=numeric(1000,0)
-    contractRoot SHAPtr 
+    contractRoot StateRoot 
     codeHash SHA 
     deriving Show Read Eq Generic
 
@@ -69,7 +69,7 @@ AddressStateRef
     address Address
     nonce Integer sqltype=numeric(1000,0)
     balance Integer sqltype=numeric(1000,0)
-    contractRoot SHAPtr
+    contractRoot StateRoot
     code BS.ByteString
     latestBlockDataRefNumber Integer
     deriving Show Read Eq

@@ -30,7 +30,7 @@ addCode = codeDBPut
 
 getCode::(HasCodeDB m, MonadResource m)=>SHA->m (Maybe B.ByteString)
 getCode theHash = 
-  codeDBGet (BL.toStrict $ encode $ sha2SHAPtr theHash)
+  codeDBGet (BL.toStrict $ encode $ sha2StateRoot theHash)
 
 codeDBPut::HasCodeDB m=>B.ByteString->m ()
 codeDBPut code = do

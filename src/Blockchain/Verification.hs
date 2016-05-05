@@ -16,13 +16,13 @@ import Blockchain.SHA
 
 
 
-transactionsVerificationValue::[Transaction]->MP.SHAPtr
-transactionsVerificationValue = MP.sha2SHAPtr . listToRLPVerificationValue
+transactionsVerificationValue::[Transaction]->MP.StateRoot
+transactionsVerificationValue = MP.sha2StateRoot . listToRLPVerificationValue
 
 ommersVerificationValue::[BlockData]->SHA
 ommersVerificationValue = listToRLPVerificationValue 
 
-receiptsVerificationValue::()->MP.SHAPtr
+receiptsVerificationValue::()->MP.StateRoot
 receiptsVerificationValue _ = MP.emptyTriePtr
 
 listToRLPVerificationValue :: (RLPSerializable a) => [a] -> SHA
