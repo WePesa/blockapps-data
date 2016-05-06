@@ -44,7 +44,7 @@ getNewBlk h = do
 
   return $ fmap entityVal res
 
-putNewBlk::(HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
+putNewBlk::HasSQLDB m=>
            NewBlk->m ()
 putNewBlk blk = do
   db <- getSQLDB
