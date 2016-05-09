@@ -26,14 +26,14 @@ import Blockchain.Data.BlockDB
 import Blockchain.Data.RLP
 
 import Control.Monad.State
-
+import Blockchain.KafkaTopics
 
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage "unminedblock" $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage (lookupTopic "unminedblock") $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 
 fetchUnminedBlocks::Offset->Kafka [Block]
-fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes "unminedblock"
+fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes (lookupTopic "unminedblock")

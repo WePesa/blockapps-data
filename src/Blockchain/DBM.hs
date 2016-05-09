@@ -35,8 +35,10 @@ connStr::SQL.ConnectionString
 connStr = "host=localhost dbname=eth user=postgres password=api port=5432"
 -}
 
+{-
 connStr'::SQL.ConnectionString
 connStr' = BC.pack $ "host=localhost dbname=eth user=postgres password=api port=" ++ show (port $ sqlConfig ethConf)
+-}
 
 openDBs::(MonadResource m, MonadBaseControl IO m)=>m DBs
 openDBs = do

@@ -83,8 +83,7 @@ genesisInfoToGenesisBlock gi = do
 initializeGenesisBlock::(HasStateDB m, HasCodeDB m, HasSQLDB m, HasHashDB m)=>
                         String->m ()
 initializeGenesisBlock genesisBlockName = do
-  confDir <- liftIO $ getConfDir
-  theJSONString <- liftIO $ BLC.readFile $ confDir </> genesisBlockName ++ "Genesis.json"
+  theJSONString <- liftIO $ BLC.readFile $ genesisBlockName ++ "Genesis.json"
 
   let theJSON = either error id $ eitherDecode theJSONString
   

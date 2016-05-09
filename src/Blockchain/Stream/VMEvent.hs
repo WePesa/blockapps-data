@@ -39,6 +39,7 @@ import Blockchain.Data.BlockOffset
 import Blockchain.Data.BlockDB
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RLP
+import Blockchain.KafkaTopics
 
 import Control.Monad.State
 
@@ -63,7 +64,7 @@ vmEventToBytes NewUnminedBlockAvailable = B.singleton 1
 produceVMEvents::(HasSQLDB m, MonadIO m)=>[VMEvent]->m Offset
 produceVMEvents vmEvents = do
   result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
-            produceMessages $ map (TopicAndMessage "block" . makeMessage . vmEventToBytes) vmEvents
+            produceMessages $ map (TopicAndMessage (lookupTopic "block") . makeMessage . vmEventToBytes) vmEvents
 
   case result of
    Left e -> error $ show e
@@ -74,15 +75,15 @@ produceVMEvents vmEvents = do
      return offset
 
 fetchVMEvents::Offset->Kafka [VMEvent]
-fetchVMEvents = fmap (map bytesToVMEvent) . fetchBytes "block"
+fetchVMEvents = fmap (map bytesToVMEvent) . fetchBytes (lookupTopic "block")
 
 fetchVMEventsIO::Offset->IO (Maybe [VMEvent])
 fetchVMEventsIO offset = do
-  fmap (fmap (map bytesToVMEvent)) $ fetchBytesIO "block" offset
+  fmap (fmap (map bytesToVMEvent)) $ fetchBytesIO (lookupTopic "block") offset
 
 fetchVMEventsOneIO::Offset->IO (Maybe VMEvent)
 fetchVMEventsOneIO offset = do
-  fmap (fmap bytesToVMEvent) $ fetchBytesOneIO "block" offset
+  fmap (fmap bytesToVMEvent) $ fetchBytesOneIO (lookupTopic "block") offset
 
 fetchLastVMEvents::Offset->IO [VMEvent]
 fetchLastVMEvents n = do
@@ -91,7 +92,7 @@ fetchLastVMEvents n = do
       stateRequiredAcks .= -1
       stateWaitSize .= 1
       stateWaitTime .= 100000
-      lastOffset <- getLastOffset LatestTime 0 "block"
+      lastOffset <- getLastOffset LatestTime 0 (lookupTopic "block")
       when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
       let offset = max (lastOffset - n) 0
       fetchVMEvents offset

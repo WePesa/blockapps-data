@@ -45,8 +45,11 @@ import qualified Data.NibbleString as N
 
 getAddressState::(HasStateDB m, HasHashDB m)=>Address->m AddressState
 getAddressState address = do
+    liftIO $ putStrLn "getting state db"
     db <- getStateDB
+    liftIO $ putStrLn "getting states"
     states <- MP.getKeyVal db $ addressAsNibbleString address
+    liftIO $ putStrLn "pattern matching on states"
     case states of
       Nothing -> do
         -- Querying an absent state counts as initializing it.
