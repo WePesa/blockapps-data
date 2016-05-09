@@ -56,7 +56,6 @@ library
                  , transformers
                  , ansi-wl-pprint
                  , entropy
-                 , readline
                  , yaml
                  , entropy
                  , process

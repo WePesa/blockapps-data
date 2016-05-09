@@ -20,7 +20,6 @@ import qualified Database.LevelDB as DB
 import Database.Persist.Postgresql hiding (get)
 import System.Directory
 import System.FilePath
-import System.Console.Readline
 import Data.Maybe
 -- import Data.Aeson
 import Data.Yaml
@@ -352,17 +351,19 @@ oneTimeSetup genesisBlockName = do
 
       maybePGuser <- do 
           case flags_pguser of 
-             "" -> readline "enter a postgres user with database credentials (postgres): "
+             "" -> do putStrLn $  "using default postgres user: postgres"
+                      return $ (Just "postgres")
              user -> return $ (Just user)
 
       maybePGpass <- do
           case flags_password of 
-             "" -> readline "enter password for database user: "
+             "" -> error "specify password for postgres user: "
              pass -> return $ (Just pass)
 
       maybeKafkaPath <- do
           case flags_kafka of 
-             "" -> readline $ "enter kafka binary path (" ++ kafkaPath ++ "): "
+             "" -> do putStrLn $ "using default kafka path: " ++ kafkaPath
+                      return $ (Just kafkaPath)
              pass -> return $ (Just pass)
 
       bytes <- getEntropy 20
