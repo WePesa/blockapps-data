@@ -5,22 +5,12 @@ module Blockchain.Data.BlockSummary (
     blockToBSum
   ) where
 
-import Control.Monad
---import Control.Monad.Base
-import Control.Monad.Trans
---import Control.Monad.Trans.Control
-import Control.Monad.Trans.Resource
-import Control.Monad.Trans.State
-import Data.Binary
-import qualified Data.ByteString.Lazy as BL
-import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
     
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RLP
 import qualified Blockchain.Database.MerklePatricia as MP
-import Blockchain.Format
 import Blockchain.SHA
                 
 data BlockSummary = BlockSummary {

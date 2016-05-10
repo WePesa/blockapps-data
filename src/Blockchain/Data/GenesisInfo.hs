@@ -8,7 +8,6 @@ module Blockchain.Data.GenesisInfo (
 
 import Data.Aeson
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Base16 as B16
 import Data.Time
 import Data.Word
@@ -38,6 +37,7 @@ data GenesisInfo =
 } deriving (Show)
 
 
+defaultGenesisInfo::GenesisInfo
 defaultGenesisInfo =
   GenesisInfo { 
     genesisInfoParentHash = SHA 0,

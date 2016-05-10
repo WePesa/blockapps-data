@@ -9,15 +9,12 @@ module Blockchain.DB.BlockSummaryDB (
 
 import Control.Monad.Trans.Resource
 import Data.Binary
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
-import Data.Default
 import Data.Maybe
 import qualified Database.LevelDB as LDB
 
 import Blockchain.Data.BlockSummary
 import Blockchain.Data.RLP
-import Blockchain.Database.MerklePatricia
 import Blockchain.Format
 import Blockchain.SHA
 
