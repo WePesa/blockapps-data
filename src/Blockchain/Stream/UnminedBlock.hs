@@ -27,11 +27,12 @@ import Blockchain.Data.RLP
 
 import Control.Monad.State
 import Blockchain.KafkaTopics
+import Blockchain.EthConf
 
 produceUnminedBlocks::MonadIO m=>[Block]->m ()
 produceUnminedBlocks blocks = do
   forM_ blocks $ \block -> do
-    _ <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ produceMessages [TopicAndMessage (lookupTopic "unminedblock") $ makeMessage $ rlpSerialize $ rlpEncode $ block]
+    _ <- liftIO $ runKafkaConfigured "blockapps-data" $ produceMessages [TopicAndMessage (lookupTopic "unminedblock") $ makeMessage $ rlpSerialize $ rlpEncode $ block]
     --liftIO $ print result
     return ()
 

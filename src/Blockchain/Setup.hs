@@ -46,8 +46,10 @@ import Blockchain.APIFiles
 import HFlags 
 
 defineFlag "u:pguser" ("" :: String) "Postgres user"
+defineFlag "P:pghost" ("" :: String) "Postgres hostname"
 defineFlag "p:password" ("" :: String) "Postgres password"
 defineFlag "k:kafka" ("" :: String) "Kafka bin directory"
+defineFlag "K:kafkahost" ("" :: String) "Kafka hostname"
 defineFlag "s:superfluous" ("" :: String) "Superfluous parameter"
 
 data SetupDBs =
@@ -97,6 +99,11 @@ defaultSqlConfig =
       poolsize = 10
     } 
 
+defaultKafkaConfig :: KafkaConf
+defaultKafkaConfig = KafkaConf {
+  kafkaHost = "localhost",
+  kafkaPort = 9092
+  }
 
 defaultLevelDBConfig :: LevelDBConf
 defaultLevelDBConfig =
@@ -133,6 +140,7 @@ defaultConfig =
       ethUniqueId = defaultEthUniqueId,
       sqlConfig = defaultSqlConfig,
       levelDBConfig = defaultLevelDBConfig,
+      kafkaConfig = defaultKafkaConfig,
       blockConfig = defaultBlockConfig,  
       quarryConfig = defaultQuarryConfig
     }
@@ -304,13 +312,14 @@ kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 type Topic' = String
 
 createKafkaTopic :: FilePath -> Topic' -> IO () 
-createKafkaTopic path topic = callProcess 
-                           (path </> "kafka-topics.sh") 
-                           ([ "--create",
-                              "--zookeeper localhost:2181", 
-                              "--replication-factor 1", 
-                              "--partitions 1",
-                              "--topic " ++ topic ] )
+createKafkaTopic path topic =
+  callProcess (path </> "kafka-topics.sh") [
+    "--create",
+    "--zookeeper", "localhost:2181", 
+    "--replication-factor", "1", 
+    "--partitions", "1",
+    "--topic", topic
+    ]
 
 topics :: [Topic']
 topics = [ "block",
@@ -335,7 +344,6 @@ createKafkaTopics path top = sequence_ . (map (createKafkaTopic path)) $ top
 
 oneTimeSetup :: String -> IO ()
 oneTimeSetup genesisBlockName = do
-  s <- $initHFlags "strato-setup"
 
   dirExists <- doesDirectoryExist ".ethereumH"
 
@@ -355,6 +363,12 @@ oneTimeSetup genesisBlockName = do
                       return $ (Just "postgres")
              user -> return $ (Just user)
 
+      maybePGhost <- do 
+          case flags_pghost of 
+             "" -> do putStrLn $  "using default postgres host: localhost"
+                      return $ (Just "localhost")
+             host -> return $ (Just host)
+
       maybePGpass <- do
           case flags_password of 
              "" -> error "specify password for postgres user: "
@@ -365,6 +379,12 @@ oneTimeSetup genesisBlockName = do
              "" -> do putStrLn $ "using default kafka path: " ++ kafkaPath
                       return $ (Just kafkaPath)
              pass -> return $ (Just pass)
+
+      kafkaHostFlag <- do
+          case flags_kafkahost of 
+             "" -> do putStrLn $ "using default kafka host: localhost" 
+                      return "localhost"
+             host -> return host
 
       bytes <- getEntropy 20
 
@@ -380,6 +400,7 @@ oneTimeSetup genesisBlockName = do
           cfg = defaultConfig { 
                   sqlConfig = defaultSqlConfig { 
                     user = user',
+                    host = fromMaybe "localhost" maybePGhost,
                     password = fromMaybe "" maybePGpass
                   }
                 }
@@ -388,6 +409,7 @@ oneTimeSetup genesisBlockName = do
                            Nothing -> kafkaPath
                            Just "" -> kafkaPath
                            Just kpath -> kpath  
+
      {- CONFIG: create database and write default config files, including strato-api -}
      
       let uniqueString = C.unpack . B16.encode $ bytes 
@@ -399,9 +421,11 @@ oneTimeSetup genesisBlockName = do
           pgConn = postgreSQLConnectionString pgCfg
           pgConn' = postgreSQLConnectionString pgCfg'
           pgConnGlobal = postgreSQLConnectionString pgCfg { database = "blockchain" }
+          kafkaCfg = defaultKafkaConfig { kafkaHost = kafkaHostFlag }
 
           cfg' = cfg { 
                    sqlConfig = pgCfg'', 
+                   kafkaConfig = kafkaCfg,
                    ethUniqueId = defaultEthUniqueId {
                      peerId = uniqueString
                    }
@@ -432,15 +456,9 @@ oneTimeSetup genesisBlockName = do
 
       runNoLoggingT $ withPostgresqlConn pgConn' $ runReaderT $ rawExecute query []
 
-     {- CONFIG: create kafka topics -} 
+      {- CONFIG: create kafka topics -} 
 
-      let uniqueTopicMap = foldr (\topic tmpMap -> (Map.insert 
-                                                     topic 
-                                                     (topic ++ "_" ++ uniqueString)
-                                                     tmpMap)) 
-                                 Map.empty 
-                                 topics
-
+      let uniqueTopicMap = Map.fromList [(topic, topic ++ "_" ++ uniqueString) | topic <- topics]
       encodeFile (".ethereumH" </> "topics.yaml") uniqueTopicMap
 
     {- kafkaTopics implicitly defined by ethconf.yaml above & unsafePerformIO -}

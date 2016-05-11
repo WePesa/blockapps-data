@@ -40,6 +40,7 @@ import Blockchain.Data.BlockDB
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RLP
 import Blockchain.KafkaTopics
+import Blockchain.EthConf
 
 import Control.Monad.State
 
@@ -63,7 +64,7 @@ vmEventToBytes NewUnminedBlockAvailable = B.singleton 1
 
 produceVMEvents::(HasSQLDB m, MonadIO m)=>[VMEvent]->m Offset
 produceVMEvents vmEvents = do
-  result <- liftIO $ runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $
+  result <- liftIO $ runKafkaConfigured "blockapps-data" $
             produceMessages $ map (TopicAndMessage (lookupTopic "block") . makeMessage . vmEventToBytes) vmEvents
 
   case result of
@@ -88,7 +89,7 @@ fetchVMEventsOneIO offset = do
 fetchLastVMEvents::Offset->IO [VMEvent]
 fetchLastVMEvents n = do
   ret <-
-    runKafka (mkKafkaState "strato-p2p-client" ("127.0.0.1", 9092)) $ do
+    runKafkaConfigured "strato-p2p-client" $ do
       stateRequiredAcks .= -1
       stateWaitSize .= 1
       stateWaitTime .= 100000

@@ -17,6 +17,7 @@ import Network.Kafka.Consumer
 import Network.Kafka.Protocol hiding (Message)
 
 import Blockchain.KafkaTopics
+import Blockchain.EthConf
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
 fetchBytes topic offset = do
@@ -26,7 +27,7 @@ fetchBytes topic offset = do
 fetchBytesIO::TopicName->Offset->IO (Maybe [B.ByteString])
 fetchBytesIO topic offset = do
   ret <-
-      runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ do
+      runKafkaConfigured "blockapps-data" $ do
       lastOffset <- getLastOffset LatestTime 0 topic
 
       if (offset > lastOffset)
