@@ -8,10 +8,15 @@ module Blockchain.Stream.Raw (
 
 import Control.Lens
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
+import qualified Data.Map as M
+import Data.Maybe
 
 import Network.Kafka
 import Network.Kafka.Consumer
 import Network.Kafka.Protocol hiding (Message)
+
+import Blockchain.KafkaTopics
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
 fetchBytes topic offset = do
@@ -21,7 +26,7 @@ fetchBytes topic offset = do
 fetchBytesIO::TopicName->Offset->IO (Maybe [B.ByteString])
 fetchBytesIO topic offset = do
   ret <-
-    runKafka (mkKafkaState "block" ("127.0.0.1", 9092)) $ do
+      runKafka (mkKafkaState "blockapps-data" ("127.0.0.1", 9092)) $ do
       lastOffset <- getLastOffset LatestTime 0 topic
 
       if (offset > lastOffset)

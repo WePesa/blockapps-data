@@ -56,7 +56,11 @@ library
                  , transformers
                  , ansi-wl-pprint
                  , entropy
-      		 
+                 , yaml
+                 , entropy
+                 , process
+                 , hflags
+
     exposed-modules: 
                    Blockchain.Constants
                    Blockchain.Data.Address
@@ -98,7 +102,7 @@ library
                    Blockchain.Stream.Raw
                    Blockchain.Stream.VMEvent
                    Blockchain.Stream.UnminedBlock
-
+                   Blockchain.Data.Blockchain
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
