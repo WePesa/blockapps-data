@@ -335,7 +335,7 @@ createKafkaTopics path top = sequence_ . (map (createKafkaTopic path)) $ top
 
 oneTimeSetup :: String -> IO ()
 oneTimeSetup genesisBlockName = do
-  s <- $initHFlags "strato-setup"
+--  s <- $initHFlags "strato-setup"
 
   dirExists <- doesDirectoryExist ".ethereumH"
 
