@@ -18,7 +18,6 @@ module Blockchain.Data.Blockchain
 
 import Database.Persist
 import Database.Persist.TH
-import Database.Persist.Quasi
 import Database.Persist.Postgresql hiding (get)
 
 import Control.Monad.Logger (runNoLoggingT)
