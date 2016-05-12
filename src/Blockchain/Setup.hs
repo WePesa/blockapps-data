@@ -50,6 +50,7 @@ defineFlag "P:pghost" ("" :: String) "Postgres hostname"
 defineFlag "p:password" ("" :: String) "Postgres password"
 defineFlag "k:kafka" ("" :: String) "Kafka bin directory"
 defineFlag "K:kafkahost" ("" :: String) "Kafka hostname"
+defineFlag "z:zkhost" ("" :: String) "Zookeeper hostname"
 defineFlag "s:superfluous" ("" :: String) "Superfluous parameter"
 
 data SetupDBs =
@@ -311,11 +312,11 @@ kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 
 type Topic' = String
 
-createKafkaTopic :: FilePath -> Topic' -> IO () 
-createKafkaTopic path topic =
+createKafkaTopic :: FilePath -> String -> Topic' -> IO () 
+createKafkaTopic path zk topic =
   callProcess (path </> "kafka-topics.sh") [
     "--create",
-    "--zookeeper", "localhost:2181", 
+    "--zookeeper", zk ++ ":2181", 
     "--replication-factor", "1", 
     "--partitions", "1",
     "--topic", topic
@@ -326,8 +327,8 @@ topics = [ "block",
            "unminedblock",
            "blockapps-data" ]
 
-createKafkaTopics :: FilePath -> [Topic'] -> IO ()
-createKafkaTopics path top = sequence_ . (map (createKafkaTopic path)) $ top
+createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
+createKafkaTopics path zk top = sequence_ . (map (createKafkaTopic path zk)) $ top
 
 
 {-
@@ -383,6 +384,12 @@ oneTimeSetup genesisBlockName = do
       kafkaHostFlag <- do
           case flags_kafkahost of 
              "" -> do putStrLn $ "using default kafka host: localhost" 
+                      return "localhost"
+             host -> return host
+
+      zkHostFlag <- do
+          case flags_zkhost of 
+             "" -> do putStrLn $ "using default zookeeper host: localhost" 
                       return "localhost"
              host -> return host
 
@@ -463,7 +470,7 @@ oneTimeSetup genesisBlockName = do
 
     {- kafkaTopics implicitly defined by ethconf.yaml above & unsafePerformIO -}
 
-      createKafkaTopics kafkaPath' (Map.elems kafkaTopics)
+      createKafkaTopics kafkaPath' zkHostFlag (Map.elems kafkaTopics)
   
      {- CONFIG: define tables and indices -}
      {- connStr implicitly defined by ethconf.yaml above, & unsafePerformIO -}  
