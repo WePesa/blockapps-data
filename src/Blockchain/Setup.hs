@@ -131,7 +131,7 @@ defaultEthUniqueId =
 defaultQuarryConfig :: QuarryConf
 defaultQuarryConfig = 
     QuarryConf { 
-      coinbaseAddress = 0xab,
+      coinbaseAddress = "ab",
       lazyBlocks = False
     }
 
