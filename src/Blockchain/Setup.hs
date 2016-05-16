@@ -5,7 +5,6 @@ module Blockchain.Setup (
   oneTimeSetup
   ) where
 
-import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger (runNoLoggingT,runStdoutLoggingT)
@@ -441,19 +440,16 @@ oneTimeSetup genesisBlockName = do
       inflateDir stratoAPIStaticDir
       inflateDir stratoAPIConfigDir
 
-      {- CONFIG: create global blockchain table if it doesn't exist -}
-
-      path <- getCurrentDirectory
-       
-      liftIO $ putStrLn $ CL.yellow ">>>> Creating Global Database (if it doesn't exist)"
-      let create = T.pack $ "CREATE DATABASE blockchain;"
-
-      _ <- try $ runNoLoggingT $ withPostgresqlConn pgConn' $ runReaderT $ rawExecute create [] :: IO (Either SomeException ())
-      createDBAndInsertBlockchain pgConnGlobal path uniqueString
-
       encodeFile (".ethereumH" </> "ethconf.yaml") cfg'
       encodeFile (".ethereumH" </> "peers.yaml") defaultPeers
 
+      {- CONFIG: register this blockchain with the global database -}
+
+      path <- getCurrentDirectory
+       
+      insertBlockchain pgConnGlobal path uniqueString
+
+      {- CONFIG: Create the local database -}
 
       liftIO $ putStrLn $ CL.yellow ">>>> Creating Database " ++ db'
       liftIO $ putStrLn $ CL.blue $ "  connection is " ++ (show pgConn')
