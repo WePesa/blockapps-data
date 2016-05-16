@@ -14,7 +14,8 @@
 
 module Blockchain.Stream.UnminedBlock (
   produceUnminedBlocks,
-  fetchUnminedBlocks
+  fetchUnminedBlocks,
+  fetchUnminedBlocksIO
 ) where 
 
 import Network.Kafka
@@ -37,4 +38,9 @@ produceUnminedBlocks blocks = do
     return ()
 
 fetchUnminedBlocks::Offset->Kafka [Block]
+
 fetchUnminedBlocks = fmap (map (rlpDecode . rlpDeserialize)) . fetchBytes (lookupTopic "unminedblock")
+
+fetchUnminedBlocksIO::Offset->IO (Maybe [Block])
+fetchUnminedBlocksIO offset = do
+  fmap (fmap (map (rlpDecode . rlpDeserialize))) $ fetchBytesIO (lookupTopic "unminedblock") offset

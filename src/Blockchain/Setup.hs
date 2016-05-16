@@ -345,7 +345,6 @@ createKafkaTopics path zk top = sequence_ . (map (createKafkaTopic path zk)) $ t
 
 oneTimeSetup :: String -> IO ()
 oneTimeSetup genesisBlockName = do
-
   dirExists <- doesDirectoryExist ".ethereumH"
 
   if dirExists
