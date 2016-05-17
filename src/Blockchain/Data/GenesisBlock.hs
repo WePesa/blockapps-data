@@ -10,11 +10,9 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Resource
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BLC
-import System.FilePath.Posix
 
 import Blockchain.Database.MerklePatricia
 
-import Blockchain.Constants
 import Blockchain.Data.Address
 import Blockchain.Data.AddressStateDB
 import Blockchain.Data.BlockDB

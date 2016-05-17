@@ -60,6 +60,7 @@ library
                  , entropy
                  , process
                  , hflags
+                 , monad-control
 
     exposed-modules: 
                    Blockchain.Constants

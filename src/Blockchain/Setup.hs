@@ -6,14 +6,12 @@ module Blockchain.Setup (
   ) where
 
 import Control.Exception
-import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Logger (runNoLoggingT,runStdoutLoggingT)
+import Control.Monad.Logger (runNoLoggingT)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
 import Control.Monad.Trans.State
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as C
 import qualified Database.LevelDB as DB
@@ -39,7 +37,6 @@ import Blockchain.DB.SQLDB
 import Blockchain.Constants
 import Blockchain.EthConf
 import Blockchain.KafkaTopics
-import Blockchain.PeerUrls
 import Blockchain.Data.Blockchain
 import Blockchain.APIFiles
 
@@ -299,13 +296,14 @@ defaultPeers =
     ("kobigurk.dyndns.org",30303),
     ("37.142.103.9" ,30303) ]
 
+kafkaPath :: FilePath
 kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 
 type Topic' = String
 
 createKafkaTopic :: FilePath -> Topic' -> IO () 
-createKafkaTopic path topic = callProcess 
-                           (path </> "kafka-topics.sh") 
+createKafkaTopic path' topic = callProcess 
+                           (path' </> "kafka-topics.sh") 
                            ([ "--create",
                               "--zookeeper localhost:2181", 
                               "--replication-factor 1", 
@@ -318,7 +316,7 @@ topics = [ "block",
            "blockapps-data" ]
 
 createKafkaTopics :: FilePath -> [Topic'] -> IO ()
-createKafkaTopics path top = sequence_ . (map (createKafkaTopic path)) $ top
+createKafkaTopics path' top = sequence_ . (map (createKafkaTopic path')) $ top
 
 
 {-
@@ -353,7 +351,7 @@ oneTimeSetup genesisBlockName = do
           case flags_pguser of 
              "" -> do putStrLn $  "using default postgres user: postgres"
                       return $ (Just "postgres")
-             user -> return $ (Just user)
+             user' -> return $ (Just user')
 
       maybePGpass <- do
           case flags_password of 
@@ -372,14 +370,14 @@ oneTimeSetup genesisBlockName = do
 
 
 
-      let user' =  case maybePGuser of 
+      let user'' =  case maybePGuser of 
                         Nothing -> "postgres"
                         Just "" -> "postgres"
-                        Just user' -> user'
+                        Just usr -> usr
 
           cfg = defaultConfig { 
                   sqlConfig = defaultSqlConfig { 
-                    user = user',
+                    user = user'',
                     password = fromMaybe "" maybePGpass
                   }
                 }
@@ -396,7 +394,6 @@ oneTimeSetup genesisBlockName = do
           db = database pgCfg
           db' = db ++ "_" ++ uniqueString
           pgCfg'' = pgCfg { database = db' }
-          pgConn = postgreSQLConnectionString pgCfg
           pgConn' = postgreSQLConnectionString pgCfg'
           pgConnGlobal = postgreSQLConnectionString pgCfg { database = "blockchain" }
 
@@ -413,13 +410,13 @@ oneTimeSetup genesisBlockName = do
 
       {- CONFIG: create global blockchain table if it doesn't exist -}
 
-      path <- getCurrentDirectory
+      currPath <- getCurrentDirectory
        
       liftIO $ putStrLn $ CL.yellow ">>>> Creating Global Database (if it doesn't exist)"
       let create = T.pack $ "CREATE DATABASE blockchain;"
 
       _ <- try $ runNoLoggingT $ withPostgresqlConn pgConn' $ runReaderT $ rawExecute create [] :: IO (Either SomeException ())
-      createDBAndInsertBlockchain pgConnGlobal path uniqueString
+      _ <- createDBAndInsertBlockchain pgConnGlobal currPath uniqueString
 
       encodeFile (".ethereumH" </> "ethconf.yaml") cfg'
       encodeFile (".ethereumH" </> "peers.yaml") defaultPeers
@@ -490,7 +487,7 @@ oneTimeSetup genesisBlockName = do
 
               pool <- runNoLoggingT $ createPostgresqlPool connStr 20
 
-              flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
+              _ <- flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
                 addCode B.empty --blank code is the default for Accounts, but gets added nowhere else.
                 liftIO $ putStrLn $ CL.yellow ">>>> Initializing Genesis Block"
                 initializeGenesisBlock genesisBlockName

@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-} 
     
 module Blockchain.Data.Blockchain
     ( 
@@ -22,7 +23,8 @@ import Database.Persist.Postgresql hiding (get)
 
 import Control.Monad.Logger (runNoLoggingT)
 import Control.Monad.Trans.Reader
-
+import Control.Monad.Trans
+import Control.Monad.Trans.Control
 
 {- global registry of blockchains -}
 
@@ -32,6 +34,13 @@ Blockchain
     uuid String
     deriving Show
 |]
+
+
+createDBAndInsertBlockchain :: ( MonadBaseControl IO m, MonadIO m) 
+                            => ConnectionString 
+                            -> String 
+                            -> String 
+                            -> m (Key Blockchain)
 
 createDBAndInsertBlockchain pgConn path uuid = runNoLoggingT $ withPostgresqlConn pgConn $ runReaderT $ do
     runMigration migrateAll
