@@ -5,14 +5,13 @@ module Blockchain.Setup (
   oneTimeSetup
   ) where
 
-import Control.Monad
+import Control.Exception
 import Control.Monad.IO.Class
-import Control.Monad.Logger (runNoLoggingT,runStdoutLoggingT)
+import Control.Monad.Logger (runNoLoggingT)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
 import Control.Monad.Trans.State
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as C
 import qualified Database.LevelDB as DB
@@ -38,7 +37,6 @@ import Blockchain.DB.SQLDB
 import Blockchain.Constants
 import Blockchain.EthConf
 import Blockchain.KafkaTopics
-import Blockchain.PeerUrls
 import Blockchain.Data.Blockchain
 import Blockchain.APIFiles
 
@@ -307,6 +305,7 @@ defaultPeers =
     ("kobigurk.dyndns.org",30303),
     ("37.142.103.9" ,30303) ]
 
+kafkaPath :: FilePath
 kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 
 type Topic' = String
@@ -328,6 +327,7 @@ topics = [ "block",
 
 createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
 createKafkaTopics path zk top = sequence_ . (map (createKafkaTopic path zk)) $ top
+
 
 
 {-
@@ -360,7 +360,7 @@ oneTimeSetup genesisBlockName = do
           case flags_pguser of 
              "" -> do putStrLn $  "using default postgres user: postgres"
                       return $ (Just "postgres")
-             user -> return $ (Just user)
+             user' -> return $ (Just user')
 
       maybePGhost <- do 
           case flags_pghost of 
@@ -397,10 +397,10 @@ oneTimeSetup genesisBlockName = do
 
 
 
-      let user' =  case maybePGuser of 
+      let user'' =  case maybePGuser of 
                         Nothing -> "postgres"
                         Just "" -> "postgres"
-                        Just user' -> user'
+                        Just usr -> usr
 
           cfg = defaultConfig { 
                   sqlConfig = defaultSqlConfig { 
@@ -423,7 +423,6 @@ oneTimeSetup genesisBlockName = do
           db = database pgCfg
           db' = db ++ "_" ++ uniqueString
           pgCfg'' = pgCfg { database = db' }
-          pgConn = postgreSQLConnectionString pgCfg
           pgConn' = postgreSQLConnectionString pgCfg'
           pgConnGlobal = postgreSQLConnectionString pgCfg { database = "blockchain" }
           kafkaCfg = defaultKafkaConfig { kafkaHost = kafkaHostFlag }
@@ -445,9 +444,12 @@ oneTimeSetup genesisBlockName = do
 
       {- CONFIG: register this blockchain with the global database -}
 
-      path <- getCurrentDirectory
-       
+      currPath <- getCurrentDirectory
+
       insertBlockchain pgConnGlobal path uniqueString
+
+      encodeFile (".ethereumH" </> "ethconf.yaml") cfg'
+      encodeFile (".ethereumH" </> "peers.yaml") defaultPeers
 
       {- CONFIG: Create the local database -}
 
@@ -510,7 +512,7 @@ oneTimeSetup genesisBlockName = do
 
               pool <- runNoLoggingT $ createPostgresqlPool connStr 20
 
-              flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
+              _ <- flip runStateT (SetupDBs smpdb hdb cdb pool) $ do
                 addCode B.empty --blank code is the default for Accounts, but gets added nowhere else.
                 liftIO $ putStrLn $ CL.yellow ">>>> Initializing Genesis Block"
                 initializeGenesisBlock genesisBlockName

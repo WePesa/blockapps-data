@@ -2,7 +2,6 @@
 
 module Blockchain.Constants where
 
-import System.Directory
 import System.FilePath
 
 import Blockchain.EthConf

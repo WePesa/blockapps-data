@@ -15,7 +15,6 @@ module Blockchain.DBM (
 
 
 import Control.Monad.Trans.Resource
-import qualified Data.ByteString.Char8 as BC
 
 import           Control.Monad.Logger    (runNoLoggingT)
 import qualified Database.Persist.Postgresql as SQL
