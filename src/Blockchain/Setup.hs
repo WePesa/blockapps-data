@@ -5,7 +5,6 @@ module Blockchain.Setup (
   oneTimeSetup
   ) where
 
-import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Logger (runNoLoggingT)
 import Control.Monad.Trans.Reader
@@ -311,8 +310,8 @@ kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
 type Topic' = String
 
 createKafkaTopic :: FilePath -> String -> Topic' -> IO () 
-createKafkaTopic path zk topic =
-  callProcess (path </> "kafka-topics.sh") [
+createKafkaTopic path' zk topic =
+  callProcess (path' </> "kafka-topics.sh") [
     "--create",
     "--zookeeper", zk ++ ":2181", 
     "--replication-factor", "1", 
@@ -326,7 +325,7 @@ topics = [ "block",
            "blockapps-data" ]
 
 createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
-createKafkaTopics path zk top = sequence_ . (map (createKafkaTopic path zk)) $ top
+createKafkaTopics path' zk top = sequence_ . (map (createKafkaTopic path' zk)) $ top
 
 
 
@@ -366,7 +365,7 @@ oneTimeSetup genesisBlockName = do
           case flags_pghost of 
              "" -> do putStrLn $  "using default postgres host: localhost"
                       return $ (Just "localhost")
-             host -> return $ (Just host)
+             host' -> return $ (Just host')
 
       maybePGpass <- do
           case flags_password of 
@@ -383,13 +382,13 @@ oneTimeSetup genesisBlockName = do
           case flags_kafkahost of 
              "" -> do putStrLn $ "using default kafka host: localhost" 
                       return "localhost"
-             host -> return host
+             host' -> return host'
 
       zkHostFlag <- do
           case flags_zkhost of 
              "" -> do putStrLn $ "using default zookeeper host: localhost" 
                       return "localhost"
-             host -> return host
+             host' -> return host'
 
       bytes <- getEntropy 20
 
@@ -404,7 +403,7 @@ oneTimeSetup genesisBlockName = do
 
           cfg = defaultConfig { 
                   sqlConfig = defaultSqlConfig { 
-                    user = user',
+                    user = user'',
                     host = fromMaybe "localhost" maybePGhost,
                     password = fromMaybe "" maybePGpass
                   }
@@ -446,7 +445,7 @@ oneTimeSetup genesisBlockName = do
 
       currPath <- getCurrentDirectory
 
-      insertBlockchain pgConnGlobal path uniqueString
+      _ <- insertBlockchain pgConnGlobal currPath uniqueString
 
       encodeFile (".ethereumH" </> "ethconf.yaml") cfg'
       encodeFile (".ethereumH" </> "peers.yaml") defaultPeers

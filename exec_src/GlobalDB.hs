@@ -10,6 +10,7 @@ defineFlag "P:pghost" ("localhost" :: String) "Postgres hostname"
 defineFlag "p:password" ("api" :: String) "Postgres password"
 $(return [])
 
+main :: IO ()
 main = do
     _ <- $initHFlags "Migrate global blockchain database"
 

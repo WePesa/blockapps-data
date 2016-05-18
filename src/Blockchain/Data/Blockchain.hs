@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-} 
     
 module Blockchain.Data.Blockchain
     ( 
@@ -23,8 +24,9 @@ import Database.Persist.TH
 import Database.Persist.Postgresql hiding (get)
 
 import Control.Monad.Logger (runNoLoggingT)
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Control
+import Control.Monad.IO.Class
 
 import qualified Data.Text as T
 
@@ -37,13 +39,16 @@ Blockchain
     deriving Show
 |]
 
+createDB :: ConnectionString -> IO ()
 createDB pgConn = do
     putStrLn $ CL.yellow ">>>> Creating global database"
     let create = T.pack $ "CREATE DATABASE blockchain;"
     runNoLoggingT $ withPostgresqlConn pgConn $ runReaderT $ rawExecute create []
 
+migrateDB :: (MonadBaseControl IO m, MonadIO m) => ConnectionString -> m ()
 migrateDB pgConn = runNoLoggingT $ withPostgresqlConn pgConn $ runReaderT $ runMigration migrateAll
 
+insertBlockchain ::  (MonadBaseControl IO m, MonadIO m) => ConnectionString -> String -> String -> m (Key Blockchain)
 insertBlockchain pgConn path uuid = runNoLoggingT $ withPostgresqlConn pgConn $ runReaderT $ do
       insert $ Blockchain { 
                  blockchainPath = path,

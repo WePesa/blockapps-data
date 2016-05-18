@@ -13,7 +13,6 @@ import Network.Kafka
 import Network.Kafka.Consumer
 import Network.Kafka.Protocol hiding (Message)
 
-import Blockchain.KafkaTopics
 import Blockchain.EthConf
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
