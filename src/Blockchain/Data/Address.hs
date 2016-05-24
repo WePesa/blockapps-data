@@ -47,6 +47,9 @@ import qualified Blockchain.Colors as C
 import Blockchain.Format
 import Blockchain.SHA
 import Blockchain.Util
+
+import Servant.Common.Text
+
 import Web.PathPieces
 
 newtype Address = Address Word160 deriving (Show, Eq, Read, Enum, Real, Bounded, Num, Ord, Generic, Integral)
@@ -60,6 +63,10 @@ instance PathPiece Address where
   fromPathPiece t = Just (Address wd160)
     where
       ((wd160, _):_) = readHex $ T.unpack $ t ::  [(Word160,String)]
+
+
+instance ToText Address where
+  toText (Address a) = T.pack $ showHex  (fromIntegral $ a :: Integer) ""
 
 {-
  make into a string rather than an object

@@ -61,6 +61,7 @@ library
                  , process
                  , hflags
                  , monad-control
+                 , servant
 
     exposed-modules: 
                    Blockchain.Constants
