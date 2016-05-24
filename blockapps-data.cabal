@@ -105,6 +105,8 @@ library
                    Blockchain.Stream.VMEvent
                    Blockchain.Stream.UnminedBlock
                    Blockchain.Data.Blockchain
+                   Blockchain.Data.Filters
+
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
