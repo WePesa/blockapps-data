@@ -12,7 +12,7 @@ import Numeric
 import Blockchain.ExtWord
 import Blockchain.Data.DataDefs
 import Blockchain.Data.Address
-import Blockchain.Data.MiscFilters
+import Blockchain.Data.Params
 
 accountQueryParams:: [T.Text]
 accountQueryParams = [ "address",

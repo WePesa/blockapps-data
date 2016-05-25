@@ -13,8 +13,8 @@ import qualified Data.ByteString.Lazy as BS
 
 import Blockchain.ExtWord
 import Blockchain.Data.DataDefs
-import Blockchain.Data.MiscFilters
 import Blockchain.Data.AccountFilters (toAddr,toAddrId)
+import Blockchain.Data.Params
 
 getStorageFilter :: (E.Esqueleto query expr backend) => (expr (E.Entity Storage), expr (E.Entity AddressStateRef)) -> (T.Text, T.Text) -> expr (E.Value Bool)
 getStorageFilter _ ("page",_)  = E.val True

@@ -110,9 +110,13 @@ library
                    Blockchain.Data.LogFilters
                    Blockchain.Data.StorageFilters
                    Blockchain.Data.AccountFilters
-                   Blockchain.Data.MiscFilters
                    Blockchain.Data.Params
-                  
+                   Blockchain.Data.AccountQueries                  
+                   Blockchain.Data.BlockQueries                  
+                   Blockchain.Data.TransactionQueries                  
+                   Blockchain.Data.StorageQueries                  
+                   Blockchain.Data.LogQueries                  
+
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True

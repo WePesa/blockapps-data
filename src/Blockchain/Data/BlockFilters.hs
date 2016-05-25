@@ -13,7 +13,7 @@ import Blockchain.SHA
 import Blockchain.Util
 import Blockchain.Data.DataDefs
 import Blockchain.Data.Address
-import Blockchain.Data.MiscFilters
+import Blockchain.Data.Params
 
 import Blockchain.Data.AccountFilters (toAddr) 
 
