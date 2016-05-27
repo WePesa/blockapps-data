@@ -104,6 +104,8 @@ library
                    Blockchain.Stream.VMEvent
                    Blockchain.Stream.UnminedBlock
                    Blockchain.Data.Blockchain
+                   Blockchain.Stream.EmergencyEvent
+
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
@@ -144,3 +146,15 @@ executable genesis-setup
     buildable: True
     main-is: GenesisSetup.hs
     hs-source-dirs: exec_src
+
+test-suite test
+    type:              exitcode-stdio-1.0
+    main-is:           Main.hs
+    hs-source-dirs:    test
+    ghc-options:       -Wall
+
+    build-depends: base
+                 , blockapps-data
+                 , HUnit
+                 , tasty
+                 , tasty-hunit

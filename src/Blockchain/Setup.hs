@@ -323,7 +323,9 @@ createKafkaTopic path' zk topic =
 topics :: [Topic']
 topics = [ "block",
            "unminedblock",
-           "blockapps-data" ]
+           "emergencyEventPermanent",
+           "emergencyEventTemporary",
+           "emergencyEventPermanentTest" ]
 
 createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
 createKafkaTopics path' zk top = sequence_ . (map (createKafkaTopic path' zk)) $ top
