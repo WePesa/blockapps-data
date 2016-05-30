@@ -1,4 +1,4 @@
-
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module EmergencyEventTest where
 
@@ -14,11 +14,13 @@ topic1= "emergencyEventPermanentTest"
 emergencyEventUnits = testGroup "Emergency Event Units" [testProduceConsume]
 
 testProduceConsume = testCase "consume . produce = id" $ do
-  offset <- produceEmergencyEventsPermanent topic1 ["Baaaad news!"]
-  event <- fetchEmergencyEventsPermanentOneIO topic1 offset
+  offset <- produceEmergencyEvents topic1 [EmergencyEventPermanent "Baaaad news!"]
+  (event :: Maybe EmergencyEventPermanent) <- fetchEmergencyEventsOneIO topic1 offset
 
-  offset4 <- produceEmergencyEventsPermanent topic1 ["Event two", "event three!", "event four"]
-  event4  <- fetchEmergencyEventsPermanentOneIO topic1 (offset4 + 2) -- this + 2 is still weird to me
+  offset4 <- produceEmergencyEvents topic1 [ EmergencyEventPermanent "Event two", 
+                                             EmergencyEventPermanent "event three!", 
+                                             EmergencyEventPermanent "event four"]
+  event4  <- fetchEmergencyEventsOneIO topic1 (offset4 + 2) -- this + 2 is still weird to me
 
-  assertEqual "fourth event is equal" (Just "event four") event4
+  assertEqual "fourth event is equal" (Just (EmergencyEventPermanent "event four")) event4
   
