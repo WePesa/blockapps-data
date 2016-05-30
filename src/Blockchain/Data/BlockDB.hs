@@ -52,6 +52,7 @@ import Blockchain.Format
 import Blockchain.Data.RLP
 import Blockchain.SHA
 import Blockchain.Util
+import Blockchain.Data.TXOrigin
 import Blockchain.Data.Transaction
 import Blockchain.Data.DataDefs
 
@@ -194,7 +195,7 @@ putBlocks blocks makeHashOne = do
   runResourceT $
     flip SQL.runSqlPool db $
     forM blocksAndHashes $ \(b, hash') -> do
-      insertTXIfNew' (Just $ blockDataNumber $ blockBlockData b) (blockReceiptTransactions b)
+      insertTXIfNew' (BlockHash $ blockHash b) (Just $ blockDataNumber $ blockBlockData b) (blockReceiptTransactions b)
 
       existingBlockData <- SQL.selectList [BlockDataRefHash SQL.==.  blockHash b] []
       

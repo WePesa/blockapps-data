@@ -88,7 +88,7 @@ RawTransaction
     v Word8
     blockNumber Int
     txHash SHA
-    fromBlock Bool
+    origin TXOrigin
     UniqueTXHash txHash
     deriving Show Read Eq    
 
