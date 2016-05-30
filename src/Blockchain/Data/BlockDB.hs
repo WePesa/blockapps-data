@@ -301,7 +301,7 @@ instance Format BlockData where
     "difficulty: " ++ show (blockDataDifficulty b) ++ "\n" ++
     "gasLimit: " ++ show (blockDataGasLimit b) ++ "\n" ++
     "gasUsed: " ++ show (blockDataGasUsed b) ++ "\n" ++
-    "timestamp: " ++ show (blockDataTimestamp b) ++ "\n" ++
+    "timestamp: " ++ show (blockDataTimestamp b) ++ "(" ++ show (round $ utcTimeToPOSIXSeconds $ blockDataTimestamp b::Integer) ++ ")\n" ++
     "extraData: " ++ show (pretty $ blockDataExtraData b) ++ "\n" ++
     "nonce: " ++ showHex (blockDataNonce b) "" ++ "\n"
 
