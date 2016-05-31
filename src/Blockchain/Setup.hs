@@ -47,6 +47,7 @@ defineFlag "p:password" ("" :: String) "Postgres password"
 defineFlag "k:kafka" ("" :: String) "Kafka bin directory"
 defineFlag "K:kafkahost" ("" :: String) "Kafka hostname"
 defineFlag "z:zkhost" ("" :: String) "Zookeeper hostname"
+defineFlag "z:lazyblocks" (False :: Bool) "Don't mine empty blocks"
 defineFlag "s:superfluous" ("" :: String) "Superfluous parameter"
 
 data SetupDBs =
@@ -406,7 +407,8 @@ oneTimeSetup genesisBlockName = do
                     user = user'',
                     host = fromMaybe "localhost" maybePGhost,
                     password = fromMaybe "" maybePGpass
-                  }
+                  },
+                  quarryConfig = defaultQuarryConfig{lazyBlocks = flags_lazyblocks}
                 }
 
       let kafkaPath' = case maybeKafkaPath of
