@@ -3,27 +3,14 @@
 module Blockchain.Data.TXOrigin where
 
 
-import Database.Persist
 import Database.Persist.TH
-import Database.Persist.Quasi
-
-import Crypto.Types.PubKey.ECC
 
 import Data.Aeson
-import Data.Text
-import Data.Time
 
-import Blockchain.Data.Address
 import Blockchain.Data.PersistTypes ()
 import Blockchain.MiscJSON ()
-import Blockchain.Data.TransactionDef
-import Blockchain.Database.MerklePatricia
-
-import qualified Data.ByteString as BS
 
 import Blockchain.SHA
-import Blockchain.ExtWord
-import Data.Word
 
 import GHC.Generics
 
