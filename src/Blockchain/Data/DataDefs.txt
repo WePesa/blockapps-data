@@ -93,7 +93,7 @@ RawTransaction
     deriving Show Read Eq    
 
 PPeer 
-    pubkey Point
+    pubkey Point Maybe
     ip Text
     port Int
     numSessions Int
