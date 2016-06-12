@@ -18,7 +18,8 @@ module Blockchain.Stream.VMEvent (
   fetchVMEvents,
   fetchVMEventsIO,
   fetchVMEventsOneIO,
-  fetchLastVMEvents
+  fetchLastVMEvents,
+  getBestKafkaBlockNumber
 ) where 
 
 import Control.Lens
@@ -102,4 +103,23 @@ fetchLastVMEvents n = do
     Left e -> error $ show e
     Right v -> return v
 
+getBestKafkaBlockNumber::Offset->IO Integer
+getBestKafkaBlockNumber n = do 
+  initVMEventsErr <-
+    runKafkaConfigured "strato-p2p-client" $ do
+      stateRequiredAcks .= -1
+      stateWaitSize .= 1
+      stateWaitTime .= 100000
+      lastOffset <- getLastOffset LatestTime 0 (lookupTopic "block")
+      when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
 
+      fetchVMEvents (max (lastOffset - n) 0)
+
+  case initVMEventsErr of
+    Left e -> error $ show e
+    Right initVMEvents -> do
+      let blocks = [ b | ChainBlock b <- initVMEvents ]
+      case blocks of
+        [] -> getBestKafkaBlockNumber (n - (fromIntegral $ length initVMEvents))
+        xs -> return $ maximum (map (blockDataNumber . blockBlockData) xs)
+    
