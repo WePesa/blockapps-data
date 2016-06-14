@@ -79,6 +79,18 @@ produceVMEvents vmEvents = do
 fetchVMEvents::Offset->Kafka [VMEvent]
 fetchVMEvents = fmap (map bytesToVMEvent) . fetchBytes (lookupTopic "block")
 
+fetchVMEventsRange::Offset->Offset->Kafka [VMEvent]
+fetchVMEventsRange lower upper = do
+  events <- fetchVMEvents lower
+
+  let returned = length events
+      newOffset = lower + (fromIntegral returned)
+  case (newOffset >= upper) of
+    True -> return (take ((fromIntegral upper) - (fromIntegral lower) + 1) events)
+    False -> do
+      events' <- fetchVMEventsRange newOffset upper
+      return (events ++ events')
+
 fetchVMEventsIO::Offset->IO (Maybe [VMEvent])
 fetchVMEventsIO offset = do
   fmap (fmap (map bytesToVMEvent)) $ fetchBytesIO (lookupTopic "block") offset
@@ -103,23 +115,46 @@ fetchLastVMEvents n = do
     Left e -> error $ show e
     Right v -> return v
 
-getBestKafkaBlockNumber::Offset->IO Integer
-getBestKafkaBlockNumber n = do 
-  initVMEventsErr <-
+lookback :: Offset
+lookback = 1000
+
+getBestKafkaBlockNumber:: IO Integer
+getBestKafkaBlockNumber = do 
+  lastOffset <- 
     runKafkaConfigured "strato-p2p-client" $ do
       stateRequiredAcks .= -1
       stateWaitSize .= 1
       stateWaitTime .= 100000
-      lastOffset <- getLastOffset LatestTime 0 (lookupTopic "block")
-      when (lastOffset == 0) $ error "Block stream is empty, you need to run strato-setup to insert the genesis block."
-
-      fetchVMEvents (max (lastOffset - n) 0)
-
-  case initVMEventsErr of
+      
+      getLastOffset LatestTime 0 (lookupTopic "block")
+      
+  case lastOffset of 
     Left e -> error $ show e
-    Right initVMEvents -> do
-      let blocks = [ b | ChainBlock b <- initVMEvents ]
-      case blocks of
-        [] -> getBestKafkaBlockNumber (n - (fromIntegral $ length initVMEvents))
-        xs -> return $ maximum (map (blockDataNumber . blockBlockData) xs)
+    Right offset -> go (max (offset-lookback) 0) offset
+
+  where
+    go m n = do
+      maybeBestBlockNumber <- getBestKafkaBlockHelper m n
+      case maybeBestBlockNumber of
+        (Just n') -> return n'
+        Nothing -> go (max (m-lookback) 0) m
+
     
+getBestKafkaBlockHelper::Offset->Offset->IO (Maybe Integer)
+getBestKafkaBlockHelper lower upper = do
+  vmEventsErr <-
+    runKafkaConfigured "strato-p2p-client" $ do
+      stateRequiredAcks .= -1
+      stateWaitSize .= 1
+      stateWaitTime .= 100000
+
+      fetchVMEventsRange lower upper
+
+  case vmEventsErr of
+    Left e -> error $ show e
+    Right vmEvents -> do
+      let blocks = [ b | ChainBlock b <- vmEvents ]
+      case blocks of
+        [] -> return Nothing
+        xs -> return . Just $ maximum (map (blockDataNumber . blockBlockData) xs)
+  
