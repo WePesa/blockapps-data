@@ -51,7 +51,8 @@ data EmergencyEventPermanent =
 
 data EmergencyEventRecoverable = 
     EmergencyEventRecoverable {
-      recoverableEventLabel :: String   
+      recoverableEventLabel :: String,
+      systemOnline :: Bool   
     } deriving (Show,Read,Eq)
 
 instance EmergencyEvent EmergencyEventPermanent where
@@ -60,8 +61,8 @@ instance EmergencyEvent EmergencyEventPermanent where
     recoverable _ = False 
 
 instance EmergencyEvent EmergencyEventRecoverable where
-    toBytes = C.pack . recoverableEventLabel
-    fromBytes = EmergencyEventRecoverable . C.unpack
+    toBytes = C.pack . show
+    fromBytes = read . C.unpack
     recoverable _ = True
  
 {- needed to pass the topic everywhere to test this, which is a bit annoying -}
@@ -77,7 +78,6 @@ produceEmergencyEvents topic eEvents = do
      let [offset] = concat $ map (map (\(_, _, x') ->x') . concat . map snd . _produceResponseFields) x
 
      return offset
-
 
 fetchEmergencyEvents::(EmergencyEvent e)=>TopicLabel->Offset->Kafka [e]
 fetchEmergencyEvents topic offset = fmap (map fromBytes) $ fetchBytes (lookupTopic topic) offset 
