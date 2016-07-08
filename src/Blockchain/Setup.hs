@@ -25,6 +25,8 @@ import qualified Data.Text as T
 import System.Entropy
 import System.Process
 
+import Paths_blockapps_data
+
 import qualified Blockchain.Colors as CL
 import qualified Blockchain.Database.MerklePatricia as MP
 import Blockchain.Data.DataDefs
@@ -328,6 +330,19 @@ topics = [ "block",
 createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
 createKafkaTopics path' zk top = sequence_ . (map (createKafkaTopic path' zk)) $ top
 
+addStandardGenesisBlockIfNeeded::String->IO ()
+addStandardGenesisBlockIfNeeded genesisBlockName = do
+  let genesisFileName = genesisBlockName ++ "Genesis.json"
+  systemGenesisFileName <- getDataFileName genesisFileName
+  
+  exists <- doesFileExist genesisFileName
+  systemExists <- doesFileExist systemGenesisFileName
+
+  case (exists, systemExists) of
+   (True, _) -> return ()
+   (_, True) -> do
+    copyFile systemGenesisFileName genesisFileName 
+   _ -> error $ "Search for genesis file has failed.  You need to supply a file named '" ++ genesisFileName ++ "'"
 
 
 {-
@@ -354,6 +369,8 @@ oneTimeSetup genesisBlockName = do
 
      {- CONFIG create default config files -} 
 
+      addStandardGenesisBlockIfNeeded genesisBlockName
+    
       putStrLn $ "writing config"
 
       maybePGuser <- do 

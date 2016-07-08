@@ -10,7 +10,10 @@ category:      Data Structures
 license: Apache-2.0
 description:  
     The client described in the Ethereum Yellowpaper
-
+data-files: livenetGenesis.json
+            stablenetGenesis.json
+            testnetGenesis.json
+    
 source-repository this
   type:     git
   location: https://github.com/jamshidh/ethereum-client-haskell
@@ -105,6 +108,7 @@ library
                    Blockchain.Stream.VMEvent
                    Blockchain.Stream.UnminedBlock
                    Blockchain.Data.Blockchain
+    other-modules: Paths_blockapps_data  
     ghc-options: -Wall -O2
     extensions: TemplateHaskell
     buildable: True
