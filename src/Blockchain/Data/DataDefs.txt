@@ -99,6 +99,7 @@ PPeer
     numSessions Int
     lastMsg Text
     lastMsgTime UTCTime
+    enableTime UTCTime
     lastTotalDifficulty Integer
     lastBestBlockHash SHA
     version Text
