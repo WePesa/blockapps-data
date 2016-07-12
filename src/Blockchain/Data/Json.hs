@@ -81,7 +81,7 @@ instance FromJSON RawTransaction' where
       bn <- t .:? "blockNumber" .!= (-1)
       h <- (t .: "hash")
       time <- t .:? "timestamp" .!= UTCTime (fromGregorian 1982 11 24) (secondsToDiffTime 0)
-      fb <- t .:? "fromBlock" .!= False
+      fb <- t .: "fromBlock"
       
       return (RawTransaction' (RawTransaction time (Address fa)
                                               (tnon :: Integer)

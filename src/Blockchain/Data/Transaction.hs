@@ -46,6 +46,7 @@ import qualified Database.Persist.Postgresql as SQL
 import Numeric
 
 import Blockchain.Data.Address
+import Blockchain.Data.TXOrigin
 import Blockchain.Data.Code
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RawTransaction
@@ -65,33 +66,33 @@ rawTX2TX :: RawTransaction -> Transaction
 rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to') val dat r s v _ _ _) = (MessageTX nonce' gp gl to' val dat r s v)
 rawTX2TX (RawTransaction _ _ nonce' gp gl Nothing val init' r s v _ _ _) = (ContractCreationTX nonce' gp gl val (Code init') r s v)
 
-txAndTime2RawTX :: Bool -> Transaction -> Integer -> UTCTime -> RawTransaction
-txAndTime2RawTX fromBlock tx blkNum time =
+txAndTime2RawTX :: TXOrigin -> Transaction -> Integer -> UTCTime -> RawTransaction
+txAndTime2RawTX origin tx blkNum time =
   case tx of
-    (MessageTX nonce' gp gl to' val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to') val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (MessageTX nonce' gp gl to' val dat r s v) -> (RawTransaction time signer nonce' gp gl (Just to') val dat r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) origin)
     (ContractCreationTX _ _ _ _ (PrecompiledCode _) _ _ _) -> error "Error in call to txAndTime2RawTX: You can't convert a transaction to a raw transaction if the code is a precompiled contract"
-    (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) fromBlock)
+    (ContractCreationTX nonce' gp gl val (Code init') r s v) ->  (RawTransaction time signer nonce' gp gl Nothing val init' r s v (fromIntegral $ blkNum) (hash $ rlpSerialize $ rlpEncode tx) origin)
   where
     signer = fromMaybe (Address (-1)) $ whoSignedThisTransaction tx
 
-tx2RawTXAndTime :: (MonadIO m) => Bool -> Transaction -> m RawTransaction
-tx2RawTXAndTime fromBlock tx = do
+tx2RawTXAndTime :: (MonadIO m) => TXOrigin -> Transaction -> m RawTransaction
+tx2RawTXAndTime origin tx = do
   time <- liftIO getCurrentTime
-  return $ txAndTime2RawTX fromBlock tx (-1) time
+  return $ txAndTime2RawTX origin tx (-1) time
 
-insertTXIfNew::HasSQLDB m=>Maybe Integer->[Transaction]->m ()
-insertTXIfNew blockNum txs = do
+insertTXIfNew::HasSQLDB m=>TXOrigin->Maybe Integer->[Transaction]->m ()
+insertTXIfNew origin blockNum txs = do
   time <- liftIO getCurrentTime
   let rawTXs =
-        map (\tx -> txAndTime2RawTX (isJust blockNum) tx (fromMaybe (-1) blockNum) time) txs
+        map (\tx -> txAndTime2RawTX origin tx (fromMaybe (-1) blockNum) time) txs
   insertRawTXIfNew $ map id rawTXs
 
 insertTXIfNew'::(MonadBaseControl IO m, MonadIO m)=>
-                Maybe Integer->[Transaction]->ReaderT SQL.SqlBackend m ()
-insertTXIfNew' blockNum txs = do
+                TXOrigin->Maybe Integer->[Transaction]->ReaderT SQL.SqlBackend m ()
+insertTXIfNew' origin blockNum txs = do
   time <- liftIO getCurrentTime
   let rawTXs =
-        map (\tx -> txAndTime2RawTX (isJust blockNum) tx (fromMaybe (-1) blockNum) time) txs
+        map (\tx -> txAndTime2RawTX origin tx (fromMaybe (-1) blockNum) time) txs
   insertRawTXIfNew' $ map id rawTXs
 
 addLeadingZerosTo64::String->String

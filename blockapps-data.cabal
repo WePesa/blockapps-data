@@ -86,6 +86,7 @@ library
                    Blockchain.Data.TransactionDef
                    Blockchain.Data.TransactionReceipt
                    Blockchain.Data.TransactionResult
+                   Blockchain.Data.TXOrigin
                    Blockchain.DBM
                    Blockchain.DB.AddressStateDB
                    Blockchain.DB.BlockDB
