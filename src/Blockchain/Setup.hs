@@ -307,14 +307,14 @@ defaultPeers =
     ("kobigurk.dyndns.org",30303),
     ("37.142.103.9" ,30303) ]
 
-kafkaPath :: FilePath
-kafkaPath = "/home" </> "kafka" </> "kafka" </> "bin"
-
 type Topic' = String
 
-createKafkaTopic :: FilePath -> String -> Topic' -> IO () 
-createKafkaTopic path' zk topic =
-  callProcess (path' </> "kafka-topics.sh") [
+createKafkaTopic :: Maybe FilePath -> String -> Topic' -> IO () 
+createKafkaTopic maybePath zk topic = do
+  maybePath1 <- findExecutable "kafka-topics.sh"
+  maybePath2 <- findExecutable "kafka-topics"
+  let thePath = flip fromMaybe maybePath $ flip fromMaybe maybePath1 $ flip fromMaybe maybePath2 $ error "executable kafka-topics doesn't exist"
+  callProcess thePath [
     "--create",
     "--zookeeper", zk ++ ":2181", 
     "--replication-factor", "1", 
@@ -327,8 +327,8 @@ topics = [ "block",
            "unminedblock",
            "blockapps-data" ]
 
-createKafkaTopics :: FilePath -> String -> [Topic'] -> IO ()
-createKafkaTopics path' zk top = sequence_ . (map (createKafkaTopic path' zk)) $ top
+createKafkaTopics :: Maybe FilePath -> String -> [Topic'] -> IO ()
+createKafkaTopics maybePath zk top = sequence_ . (map (createKafkaTopic maybePath zk)) $ top
 
 addStandardGenesisBlockIfNeeded::String->IO ()
 addStandardGenesisBlockIfNeeded genesisBlockName = do
@@ -390,11 +390,10 @@ oneTimeSetup genesisBlockName = do
              "" -> error "specify password for postgres user: "
              pass -> return $ (Just pass)
 
-      maybeKafkaPath <- do
-          case flags_kafka of 
-             "" -> do putStrLn $ "using default kafka path: " ++ kafkaPath
-                      return $ (Just kafkaPath)
-             pass -> return $ (Just pass)
+      let maybeKafkaPath = 
+            case flags_kafka of 
+              "" -> Nothing
+              pass -> Just pass
 
       kafkaHostFlag <- do
           case flags_kafkahost of 
@@ -428,10 +427,6 @@ oneTimeSetup genesisBlockName = do
                   quarryConfig = defaultQuarryConfig{lazyBlocks = flags_lazyblocks}
                 }
 
-      let kafkaPath' = case maybeKafkaPath of
-                           Nothing -> kafkaPath
-                           Just "" -> kafkaPath
-                           Just kpath -> kpath  
 
      {- CONFIG: create database and write default config files, including strato-api -}
      
@@ -485,7 +480,7 @@ oneTimeSetup genesisBlockName = do
 
     {- kafkaTopics implicitly defined by ethconf.yaml above & unsafePerformIO -}
 
-      createKafkaTopics kafkaPath' zkHostFlag (Map.elems kafkaTopics)
+      createKafkaTopics maybeKafkaPath zkHostFlag (Map.elems kafkaTopics)
   
      {- CONFIG: define tables and indices -}
      {- connStr implicitly defined by ethconf.yaml above, & unsafePerformIO -}  
