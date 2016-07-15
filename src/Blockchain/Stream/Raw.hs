@@ -16,9 +16,8 @@ import Network.Kafka.Protocol hiding (Message)
 import Blockchain.EthConf
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
-fetchBytes topic offset = do
-  result <- fetch (Offset $ fromIntegral offset) 0 topic
-  return $ map tamPayload $ fetchMessages result
+fetchBytes topic offset =
+  fmap (map tamPayload . fetchMessages) $ fetch offset 0 topic
 
 fetchBytesIO::TopicName->Offset->IO (Maybe [B.ByteString])
 fetchBytesIO topic offset = do
@@ -32,7 +31,7 @@ fetchBytesIO topic offset = do
           stateRequiredAcks .= -1
           stateWaitSize .= 1
           stateWaitTime .= 100000
-          fmap (Just . map tamPayload . fetchMessages) $ fetch offset 0 topic
+          fmap Just $ fetchBytes topic offset
 
 
   case ret of
