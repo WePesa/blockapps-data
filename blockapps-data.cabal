@@ -10,9 +10,6 @@ category:      Data Structures
 license: Apache-2.0
 description:  
     The client described in the Ethereum Yellowpaper
-data-files: livenetGenesis.json
-            stablenetGenesis.json
-            testnetGenesis.json
     
 source-repository this
   type:     git
@@ -77,8 +74,6 @@ library
                    Blockchain.Data.DataDefs
                    Blockchain.Data.DiffDB
                    Blockchain.Data.Extra
-                   Blockchain.Data.GenesisBlock
-                   Blockchain.Data.GenesisInfo
                    Blockchain.Data.Json
                    Blockchain.Data.Log
                    Blockchain.Data.LogDB
@@ -102,8 +97,6 @@ library
                    Blockchain.DB.StateDB
                    Blockchain.DB.StorageDB
                    Blockchain.Verification
-                   Blockchain.Setup
-                   Blockchain.GenesisBlockSetup
                    Blockchain.Stream.Raw
                    Blockchain.Stream.VMEvent
                    Blockchain.Stream.UnminedBlock
@@ -124,28 +117,4 @@ executable global-db
                  , hflags
     buildable: True
     main-is: GlobalDB.hs
-    hs-source-dirs: exec_src
-
-executable strato-setup
-    default-language: Haskell98
-    ghc-options: -Wall -O2
-    build-depends: 
-                   base >= 4 && < 5
-                 , blockapps-data
-                 , blockapps-util
-                 , hflags
-    buildable: True
-    main-is: Main.hs
-    hs-source-dirs: exec_src
-
-executable genesis-setup
-    default-language: Haskell98
-    ghc-options: -Wall -O2
-    build-depends: 
-                   base >= 4 && < 5
-                 , blockapps-data
-                 , blockapps-util
-                 , hflags
-    buildable: True
-    main-is: GenesisSetup.hs
     hs-source-dirs: exec_src
