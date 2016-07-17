@@ -1,19 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Blockchain.Stream.Raw (
+  produceBytes,
   fetchBytes,
   fetchBytesIO,
   fetchBytesOneIO
   ) where
 
 import Control.Lens
+import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 
 import Network.Kafka
 import Network.Kafka.Consumer
+import Network.Kafka.Producer
 import Network.Kafka.Protocol hiding (Message)
 
 import Blockchain.EthConf
+import Blockchain.KafkaTopics
+
+produceBytes::MonadIO m=>String->[B.ByteString]->m ()
+produceBytes topic items = do
+  liftIO $ runKafkaConfigured "blockapps-data" $
+    produceMessages $ map (TopicAndMessage (lookupTopic topic) . makeMessage) items
+  return ()
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
 fetchBytes topic offset =
