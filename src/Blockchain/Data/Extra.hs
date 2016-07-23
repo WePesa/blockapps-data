@@ -1,10 +1,12 @@
 
 module Blockchain.Data.Extra (
-     getBestBlockInfo, getBestBlockInfoQ,
-     putBestBlockInfo,
-     getBestIndexBlockInfo, getBestIndexBlockInfoQ,
-     putBestIndexBlockInfo
-    ) where
+  getGenesisHash,
+  putGenesisHash,
+  getBestBlockInfo, getBestBlockInfoQ,
+  putBestBlockInfo,
+  getBestIndexBlockInfo, getBestIndexBlockInfoQ,
+  putBestIndexBlockInfo
+  ) where
 
 import qualified Database.Persist.Sql as SQL
 
@@ -13,6 +15,14 @@ import Blockchain.DB.SQLDB
 import Blockchain.SHA
 
 import Control.Monad.IO.Class
+
+getGenesisHash::HasSQLDB m=>m SHA
+getGenesisHash = sqlQuery $ fmap (read . extraValue) $ SQL.getJust (ExtraKey "genesisHash")
+
+putGenesisHash::HasSQLDB m=>SHA->m ()
+putGenesisHash hash' = do
+  _ <- sqlQuery $ SQL.upsert (Extra "genesisHash" $ show hash') []
+  return ()
 
 getBestBlockInfo::HasSQLDB m =>
                   m (SHA, BlockData)
