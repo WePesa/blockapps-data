@@ -36,7 +36,10 @@ import qualified Blockchain.Database.MerklePatricia as MP
 import qualified Blockchain.Database.MerklePatricia.Internal as MP
 
 import Data.Binary
+import qualified Data.ByteString.Base16 as B16
+import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as BL
+import Data.Maybe
 
 import Control.Monad.State as ST
 import Control.Monad.Trans.Resource
@@ -64,7 +67,7 @@ getAllAddressStates = do
   where
     convert::(HasHashDB m, MonadResource m)=>(N.NibbleString, RLPObject)-> m (Address, AddressState)
     convert (k, v) = do
-      Just k' <- getAddressFromHash k
+      k' <- fmap (fromMaybe (error $ "missing key value in hash table: " ++ BC.unpack (B16.encode $ nibbleString2ByteString k))) $ getAddressFromHash k
       return (k', rlpDecode . rlpDeserialize . rlpDecode $ v)
 
 getAddressFromHash::(HasHashDB m, MonadResource m)=>N.NibbleString -> m (Maybe Address)
