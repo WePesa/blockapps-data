@@ -14,7 +14,7 @@ import Blockchain.SHA
 
 import GHC.Generics
 
-data TXOrigin = API | BlockHash SHA | PeerString String deriving (Show, Read, Eq, Generic)
+data TXOrigin = Direct | API | BlockHash SHA | PeerString String deriving (Show, Read, Eq, Generic)
 
 derivePersistField "TXOrigin"
 
