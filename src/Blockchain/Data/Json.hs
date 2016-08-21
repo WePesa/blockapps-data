@@ -279,7 +279,6 @@ instance ToJSON Block where
 bToBPrime :: (String , Block) -> Block'
 bToBPrime (s, x) = Block' x s
 
-
 bToBPrime' :: Block -> Block'
 bToBPrime' x = Block' x ""
 
@@ -312,20 +311,24 @@ instance ToJSON BlockDataRef' where
 bdrToBdrPrime :: BlockDataRef -> BlockDataRef'
 bdrToBdrPrime x = BlockDataRef' x
 
-data AddressStateRef' = AddressStateRef' AddressStateRef deriving (Eq, Show)
+data AddressStateRef' = AddressStateRef' AddressStateRef String deriving (Eq, Show)
 
 instance ToJSON AddressStateRef' where
-    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c bNum)) = 
-        object ["kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
+    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c bNum) next) = 
+        object ["next" .= next, "kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
         "contractRoot" .= cr, "code" .= c, "latestBlockNum" .= bNum]
 
+instance ToJSON AddressStateRef where
+    toJSON (AddressStateRef (Address x) n b cr c bNum) = 
+        object ["kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
+        "contractRoot" .= cr, "code" .= c, "latestBlockNum" .= bNum]
 
 instance FromJSON AddressStateRef' where
     parseJSON (Object s) = do
       kind <- s .: "kind"
       if kind /= ("AddressStateRef" :: String)
         then fail "JSON is not AddressStateRef"
-        else asrToAsrPrime <$> 
+        else asrToAsrPrime' <$> 
               (AddressStateRef
                 <$> Address . fst . head . readHex <$> s .: "address"
                 <*> s .: "nonce"
@@ -366,15 +369,20 @@ instance FromJSON LogDB where
   
     parseJSON _ = fail "malformed log"
 -}
-asrToAsrPrime :: AddressStateRef -> AddressStateRef'
-asrToAsrPrime x = AddressStateRef' x
+
+asrToAsrPrime :: (String, AddressStateRef) -> AddressStateRef'
+asrToAsrPrime (s, x) = AddressStateRef' x s
+
+asrToAsrPrime' :: AddressStateRef -> AddressStateRef'
+asrToAsrPrime' x = AddressStateRef' x ""
 
 --jsonFix x@(AddressStateRef a b c d e) = AddressStateRef' x
 --jsonFix x@(BlockDataRef a b c d e f g h i j k l m n o p q) = BlockDataRef' x
 
-data Address' = Address' Address deriving (Eq, Show)
-adToAdPrime::Address->Address'
-adToAdPrime x = Address' x
+data Address' = Address' Address String deriving (Eq, Show)
+
+adToAdPrime :: Address -> Address'
+adToAdPrime x = Address' x ""
 
 --instance ToJSON Address' where
 --  toJSON (Address' x) = object [ "address" .= (showHex x "") ]
