@@ -81,7 +81,7 @@ commitAddr :: (HasStateDB m, HasHashDB m, HasCodeDB m, MonadResource m, MonadBas
 
 commitAddr blkNum CreateAddr{ addr = addr', state = addrS } = do
   Just code <- lift $ getCode ch
-  let aRef = AddressStateRef addr' n b cr code blkNum -- Should use Lens here, no doubt
+  let aRef = AddressStateRef addr' n b cr code ch blkNum -- Should use Lens here, no doubt
   addrID <- SQL.insert aRef
   db <- lift getStateDB
   addrStorageKVs <- --lift $ lift $ lift $
