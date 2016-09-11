@@ -193,7 +193,7 @@ putBlocks maybeGenesisDifficulty blocks makeHashOne = do
   dm <-
     case (maybeGenesisDifficulty, blocks) of
      (Nothing, _) -> getDifficultyMap blocksAndHashes
-     (Just difficulty, [block]) -> return $ M.fromList [(blockHash block, difficulty)]
+     (Just difficulty', [block]) -> return $ M.fromList [(blockHash block, difficulty')]
      _ -> error "putBlocks can only specify the difficulty when one single genesis blocks is provided"
   db <- getSQLDB
   runResourceT $

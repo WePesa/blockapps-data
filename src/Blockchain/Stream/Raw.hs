@@ -21,7 +21,7 @@ import Blockchain.KafkaTopics
 
 produceBytes::MonadIO m=>String->[B.ByteString]->m ()
 produceBytes topic items = do
-  liftIO $ runKafkaConfigured "blockapps-data" $
+  _ <- liftIO $ runKafkaConfigured "blockapps-data" $
     produceMessages $ map (TopicAndMessage (lookupTopic topic) . makeMessage) items
   return ()
 
