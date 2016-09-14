@@ -1,9 +1,10 @@
-{-# LANGUAGE DataKinds, TypeFamilies, NamedFieldPuns, ViewPatterns #-}
+{-# LANGUAGE DataKinds, TypeFamilies, NamedFieldPuns, ViewPatterns, DeriveGeneric #-}
 module StateDiff (
   StateDiff(..),
   AccountDiff(..),
   Diff(..),
-  Detailed(..)
+  Detail(..),
+  Detailed(..),
   stateDiff
   ) where
 
@@ -37,6 +38,8 @@ import qualified Data.Map as Map
 
 import qualified Data.NibbleString as N
 
+import GHC.Generics
+
 -- | Describes all the changes that have occurred in the blockchain
 -- database in a given block.
 data StateDiff = 
@@ -49,6 +52,10 @@ data StateDiff =
     deletedAccounts :: Map Address (AccountDiff Eventual),
     updatedAccounts :: Map Address (AccountDiff Incremental)
     }
+    deriving (Generic)
+
+instance ToJSON StateDiff where
+  toJSON = ourToJSON
 
 -- | Describes all the changes to a particular account.  The address is not
 -- recorded; it appears as the key in the map in the 'StateDiff'
@@ -67,6 +74,10 @@ data AccountDiff (v :: Detail)
     -- | Only the storage keys that change are present in this map.
     storage :: Map Word256 (Diff Word256 v)
     }
+    deriving (Generic)
+
+instance ToJSON AccountDiff where
+  toJSON = ourToJSON
 
 -- | Generic type for holding various kinds of diff
 data family Diff a (v :: Detail)
@@ -76,9 +87,18 @@ data instance Diff a Incremental =
   Create {newValue :: a} |
   Delete {oldValue :: a} |
   Update {oldValue :: a, newValue :: a}
+  deriving (Generic)
 -- | This instance just records the single meaningful value in the change.
 -- See the 'Detailed' instance for what that means.
-newtype instance Diff a Eventual = Value a 
+newtype instance Diff a Eventual = Value a deriving (Generic)
+
+instance (ToJSON a) => ToJSON (Diff a Incremental) where
+  toJSON = ourToJSON
+
+instance (ToJSON a) => ToJSON (Diff a Eventual) where
+  toJSON = ourToJSON
+
+ourToJSON = genericToJSON $ defaultOptions{omitNothingFields = True}
 
 -- | Not a type, but a data kind
 data Detail = Incremental | Eventual
