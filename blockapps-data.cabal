@@ -80,6 +80,7 @@ library
                    Blockchain.Data.NewBlk
                    Blockchain.Data.PersistTypes
                    Blockchain.Data.RawTransaction
+                   Blockchain.Data.StateDiff
                    Blockchain.Data.Transaction
                    Blockchain.Data.TransactionDef
                    Blockchain.Data.TransactionReceipt

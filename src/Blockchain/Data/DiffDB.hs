@@ -1,31 +1,27 @@
-{-# LANGUAGE DataKinds, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, DataKinds, TypeFamilies, NamedFieldPuns #-}
 
 module Blockchain.Data.DiffDB (
   sqlDiff, commitSqlDiffs 
   ) where
 
-import Database.Persist hiding (get)
-import qualified Database.Persist.Postgresql as SQL hiding (get)
+import Database.Persist hiding (get, Update)
+import qualified Database.Persist.Postgresql as SQL hiding (get, Update)
 
 import Blockchain.Database.MerklePatricia.Internal
-import qualified Blockchain.Database.MerklePatricia.Diff as Diff
 import Blockchain.Data.Address
-import Blockchain.Data.AddressStateDB
 import Blockchain.Data.DataDefs
-import Blockchain.Data.RLP
 import Blockchain.Data.StateDiff
-import Blockchain.DB.AddressStateDB
 import Blockchain.DB.CodeDB
 import Blockchain.DB.HashDB
 import Blockchain.DB.SQLDB
 import Blockchain.DB.StateDB
 import Blockchain.ExtWord
 import Blockchain.Util
+import Blockchain.SHA
 
 import Control.Monad.Trans.Resource
-import qualified Data.NibbleString as N
 
-import Data.Aeson
+import qualified Data.Map as Map
 
 type SqlDbM m = SQL.SqlPersistT m
 
@@ -37,55 +33,65 @@ sqlDiff blockNumber blockHash oldRoot newRoot = do
 
 commitSqlDiffs :: (HasStateDB m, HasHashDB m, HasCodeDB m, HasSQLDB m, MonadResource m, MonadBaseControl IO m)=>
                   StateDiff -> m ()
-commitSqlDiffs blockNumber diffAddrs{blockNumber, createdAccounts, deletedAccounts, updatedAccounts} = do
+commitSqlDiffs StateDiff{blockNumber, createdAccounts, deletedAccounts, updatedAccounts} = do
   pool <- getSQLDB
   flip SQL.runSqlPool pool $ do
-    sequence_ $ mapWithKey (createAccount blockNumber) createdAccounts
-    sequence_ $ mapWithKey (const . deleteAccount) deletedAccounts
-    sequence_ $ mapWithKey (updateAccount blockNumber) updatedAccounts
+    sequence_ $ Map.mapWithKey (createAccount blockNumber) createdAccounts
+    sequence_ $ Map.mapWithKey (const . deleteAccount) deletedAccounts
+    sequence_ $ Map.mapWithKey (updateAccount blockNumber) updatedAccounts
 
 createAccount :: (HasStateDB m, HasHashDB m, HasCodeDB m, MonadResource m, MonadBaseControl IO m) =>
-                 Integer -> Address -> AccountDiff Eventual -> SQL.SqlPersistT m ()
+                 Integer -> Address -> AccountDiff 'Eventual -> SQL.SqlPersistT m ()
 createAccount blockNumber address diff = do
   addrID <- SQL.insert addrRef
-  sequence $ mapWithKey (commitStorage addrID) $ storage diff
+  sequence_ $ Map.mapWithKey (commitStorage addrID) $ Map.map makeIncremental $ storage diff
 
   where 
     addrRef = AddressStateRef{
-      address, 
-      nonce = getField "nonce" nonce,
-      balance = getField "balance" balance,
-      contractRoot = getField "contractRoot" contractRoot,
-      code = getField "code" code,
-      latestBlockDataRefNumber = blockNumber
+      addressStateRefAddress = address, 
+      addressStateRefNonce = getField (theError "nonce") $ nonce diff,
+      addressStateRefBalance = getField (theError "balance") $ balance diff,
+      addressStateRefContractRoot = getField (theError "contractRoot") $ contractRoot diff,
+      addressStateRefCode = getField (theError "code") $ code diff,
+      addressStateRefLatestBlockDataRefNumber = blockNumber
       }
-    getField name field = fromMaybe (theError name) $ field diff
-    theError name = 
+    makeIncremental (Value x) = Create{newValue = x}
+    theError :: String -> a
+    theError name = error $
       "Missing field '" ++ name ++ 
       "' in contract creation diff for address " ++ formatAddressWithoutColor address
-  
+
+getField :: a -> Maybe (Diff a 'Eventual) -> a
+getField def field = 
+  case field of 
+    Just (Value x) -> x
+    Nothing -> def
+
 deleteAccount :: (HasStateDB m, HasHashDB m, HasCodeDB m, MonadResource m, MonadBaseControl IO m) =>
                  Address -> SQL.SqlPersistT m ()
-deleteAccount address blockNumber diff = do
+deleteAccount address = do
   addrID <- getAddressStateSQL address "delete"
   SQL.deleteWhere [ StorageAddressStateRefId SQL.==. addrID ]
   SQL.delete addrID
   
 updateAccount :: (HasStateDB m, HasHashDB m, HasCodeDB m, MonadResource m, MonadBaseControl IO m) =>
-                 Integer -> Address -> AccountDiff Incremental -> SQL.SqlPersistT m ()
+                 Integer -> Address -> AccountDiff 'Incremental -> SQL.SqlPersistT m ()
 updateAccount blockNumber address diff = do
   addrID <- getAddressStateSQL address "update"
   SQL.update addrID $ 
     setField nonce AddressStateRefNonce $
     setField balance AddressStateRefBalance $
     [AddressStateRefLatestBlockDataRefNumber =. blockNumber]
-  sequence $ mapWithKey (commitStorage addrID) $ storage diff
+  sequence_ $ Map.mapWithKey (commitStorage addrID) $ storage diff
 
   where
-    setField field sqlField = maybe id (\v -> (sqlField =. v :)) $ field diff
+    setField field sqlField = maybe id (\v -> ((sqlField =. takeIncremental v) :)) $ field diff
+    takeIncremental Create{newValue} = newValue
+    takeIncremental Delete{} = 0
+    takeIncremental Update{newValue} = newValue
 
 commitStorage :: (HasStateDB m, HasHashDB m, MonadResource m) => 
-                 SQL.Key AddressStateRef -> Word256 -> Diff Word256 Incremental -> SqlDbM m ()
+                 SQL.Key AddressStateRef -> Word256 -> Diff Word256 'Incremental -> SqlDbM m ()
 
 commitStorage addrID key Create{newValue} =
   SQL.insert_ $ Storage addrID key newValue
