@@ -5,7 +5,9 @@ module Blockchain.Data.StateDiff (
   Diff(..),
   Detail(..),
   Detailed(..),
-  stateDiff
+  stateDiff, 
+  eventualAccountState, 
+  incrementalAccountState
   ) where
 
 import Blockchain.Database.MerklePatricia.Internal
@@ -183,7 +185,7 @@ accountUpdate k vOld vNew = do
   address <- lookupAddress k
   let oldAddrState = retrieveMPDBValue vOld
       newAddrState = retrieveMPDBValue vNew
-  accountDiff <- accountStateDiff oldAddrState newAddrState
+  accountDiff <- incrementalAccountState oldAddrState newAddrState
   return (address, accountDiff)
 
 eventualAccountState :: (HasHashDB m, HasCodeDB m, HasStateDB m, MonadResource m) => 
@@ -206,9 +208,9 @@ eventualAccountState
       storage
       }
 
-accountStateDiff :: (HasHashDB m, HasStateDB m, HasCodeDB m, MonadResource m) =>
-                    AddressState -> AddressState -> m (AccountDiff 'Incremental)
-accountStateDiff oldState newState = do
+incrementalAccountState :: (HasHashDB m, HasStateDB m, HasCodeDB m, MonadResource m) =>
+                           AddressState -> AddressState -> m (AccountDiff 'Incremental)
+incrementalAccountState oldState newState = do
   storage <- (incrementalStorage `on` addressStateContractRoot) oldState newState
   return AccountDiff{
     nonce = (diff `on` addressStateNonce) oldState newState,
