@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, DataKinds, TypeFamilies, NamedFieldPuns, ViewPatterns, DeriveGeneric, ExplicitForAll, StandaloneDeriving, OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Blockchain.Data.StateDiff (
   StateDiff(..),
   AccountDiff(..),
@@ -53,6 +54,12 @@ data StateDiff =
     updatedAccounts :: Map Address (AccountDiff 'Incremental)
     }
     deriving (Generic)
+
+instance (ToJSON a) => ToJSON (Map Address a) where
+  toJSON = toJSON . Map.mapKeys formatAddressWithoutColor
+
+instance (ToJSON a) => ToJSON (Map Word256 a) where
+  toJSON = toJSON . Map.mapKeys format
 
 instance ToJSON StateDiff where
   toJSON = genericToJSON ourDefaultOptions
