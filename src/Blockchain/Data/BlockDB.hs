@@ -171,12 +171,12 @@ addDifficulties dm ((hash', blockDifficulty, parentHash'):rest) =
   in addDifficulties dm' rest
 
 getDifficultyMap::HasSQLDB m=>
-                  [(Block, SHA)]->m (M.Map SHA Integer)
-getDifficultyMap blocksAndHashes = do
+                  [(SHA, Integer)]->[(Block, SHA)]->m (M.Map SHA Integer)
+getDifficultyMap difficultyBase blocksAndHashes = do
   let hashes = S.fromList $ map snd blocksAndHashes
       parents = S.fromList $ map (blockDataParentHash . blockBlockData . fst) blocksAndHashes
 
-  dm' <- fmap M.fromList $ getDifficulties (S.toList $ parents S.\\ hashes)
+  dm' <- fmap (M.fromList . (difficultyBase ++)) $ getDifficulties (S.toList $ parents S.\\ hashes)
 
   return $ addDifficulties dm'
     (map (\(x, y) ->
@@ -187,14 +187,10 @@ getDifficultyMap blocksAndHashes = do
 
 
 putBlocks::(HasSQLDB m, MonadResource m, MonadBaseControl IO m, MonadThrow m)=>
-           Maybe Integer->[Block]->Bool->m [(Key Block, Key BlockDataRef)]
-putBlocks maybeGenesisDifficulty blocks makeHashOne = do
+           [(SHA, Integer)]->[Block]->Bool->m [(Key Block, Key BlockDataRef)]
+putBlocks difficultyBase blocks makeHashOne = do
   let blocksAndHashes = map (\b -> (b, blockHash b)) blocks
-  dm <-
-    case (maybeGenesisDifficulty, blocks) of
-     (Nothing, _) -> getDifficultyMap blocksAndHashes
-     (Just difficulty', [block]) -> return $ M.fromList [(blockHash block, difficulty')]
-     _ -> error "putBlocks can only specify the difficulty when one single genesis blocks is provided"
+  dm <- getDifficultyMap difficultyBase blocksAndHashes
   db <- getSQLDB
   runResourceT $
     flip SQL.runSqlPool db $
