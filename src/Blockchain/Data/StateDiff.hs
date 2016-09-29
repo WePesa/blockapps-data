@@ -76,7 +76,7 @@ data AccountDiff (v :: Detail) =
     -- change
     code :: Maybe (Diff ByteString v),
     -- | Since we want to always be able to identify account-type
-    codeHash :: Maybe (Diff SHA v),
+    codeHash :: (Diff SHA v), -- Maybe
     -- | This is necessary for when we commit an AddressStateRef to SQL.  
     -- It changes if and only if the storage changes at all
     contractRoot :: Maybe (Diff StateRoot v),
@@ -134,7 +134,7 @@ instance Detailed AccountDiff where
       nonce = fmap incrementalToEventual nonce,
       balance = fmap incrementalToEventual balance,
       code = fmap incrementalToEventual code,
-      codeHash = fmap incrementalToEventual codeHash,
+      codeHash = incrementalToEventual codeHash,
       contractRoot = fmap incrementalToEventual contractRoot,
       storage = Map.map incrementalToEventual storage
       }
@@ -219,7 +219,7 @@ eventualAccountState
       balance = Just $ Value addressStateBalance,
       contractRoot = Just $ Value addressStateContractRoot,
       code = Just $ Value code,
-      codeHash = Just $ Value addressStateCodeHash,
+      codeHash = Value addressStateCodeHash,
       storage
       }
 
@@ -232,7 +232,7 @@ incrementalAccountState oldState newState = do
     balance = (diff `on` addressStateBalance) oldState newState,
     contractRoot = (diff `on` addressStateContractRoot) oldState newState,
     code = Nothing,
-    codeHash = Nothing,--(diff `on` addressStateCodeHash) oldState newState
+    codeHash = Update{oldValue = hash "", newValue = hash ""},--(diff `on` addressStateCodeHash) oldState newState,
     storage
     }
 
