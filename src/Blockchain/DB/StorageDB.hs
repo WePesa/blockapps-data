@@ -118,7 +118,7 @@ putStorageKeyValDB owner key val = do
   addressState <- getAddressState owner
   db <- fmap fst getStorageDB
   let mpdb = MP.MPDB{MP.ldb=db, MP.stateRoot=addressStateContractRoot addressState}
-  newContractRoot <- fmap MP.stateRoot $ MP.putKeyVal mpdb storageKeyNibbles (rlpEncode $ rlpSerialize $ rlpEncode $ toInteger val)
+  newContractRoot <- fmap MP.stateRoot $ MP.putKeyVal mpdb storageKeyNibbles (rlpEncode $ rlpSerialize $ rlpEncode val)
   putAddressState owner addressState{addressStateContractRoot=newContractRoot}
   where storageKeyNibbles = N.pack $ (N.byte2Nibbles =<<) $ word256ToBytes key
 
