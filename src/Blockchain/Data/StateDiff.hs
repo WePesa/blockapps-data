@@ -75,6 +75,8 @@ data AccountDiff (v :: Detail) =
     -- | Only present for newly created contracts, since the code can never
     -- change
     code :: Maybe (Diff ByteString v),
+    -- | Since we want to always be able to identify account-type
+    codeHash :: (Diff SHA v), -- Maybe
     -- | This is necessary for when we commit an AddressStateRef to SQL.  
     -- It changes if and only if the storage changes at all
     contractRoot :: Maybe (Diff StateRoot v),
@@ -127,11 +129,12 @@ class Detailed (t :: Detail -> *) where
   incrementalToEventual :: t 'Incremental -> t 'Eventual
 
 instance Detailed AccountDiff where
-  incrementalToEventual AccountDiff{nonce, balance, code, contractRoot, storage} =
+  incrementalToEventual AccountDiff{nonce, balance, code, codeHash, contractRoot, storage} =
     AccountDiff{
       nonce = fmap incrementalToEventual nonce,
       balance = fmap incrementalToEventual balance,
       code = fmap incrementalToEventual code,
+      codeHash = incrementalToEventual codeHash,
       contractRoot = fmap incrementalToEventual contractRoot,
       storage = Map.map incrementalToEventual storage
       }
@@ -146,6 +149,10 @@ instance Detailed (Diff StateRoot) where
 
 instance Detailed (Diff ByteString) where
   incrementalToEventual Delete{} = Value $ fromString ""
+  incrementalToEventual x = Value $ newValue x
+
+instance Detailed (Diff SHA) where
+  incrementalToEventual Delete{} = Value $ hash ""
   incrementalToEventual x = Value $ newValue x
 
 stateDiff :: (HasStateDB m, HasCodeDB m, HasHashDB m, MonadResource m) =>
@@ -212,6 +219,7 @@ eventualAccountState
       balance = Just $ Value addressStateBalance,
       contractRoot = Just $ Value addressStateContractRoot,
       code = Just $ Value code,
+      codeHash = Value addressStateCodeHash,
       storage
       }
 
@@ -224,6 +232,7 @@ incrementalAccountState oldState newState = do
     balance = (diff `on` addressStateBalance) oldState newState,
     contractRoot = (diff `on` addressStateContractRoot) oldState newState,
     code = Nothing,
+    codeHash = Update{oldValue = hash "", newValue = hash ""},--(diff `on` addressStateCodeHash) oldState newState,
     storage
     }
 
