@@ -62,7 +62,7 @@ instance (ToJSON a) => ToJSON (Map Word256 a) where
   toJSON = toJSON . Map.mapKeys format
 
 instance ToJSON StateDiff where
-  toJSON = genericToJSON ourDefaultOptions
+  toJSON = genericToJSON defaultOptions
 
 -- | Describes all the changes to a particular account.  The address is not
 -- recorded; it appears as the key in the map in the 'StateDiff'
@@ -89,13 +89,10 @@ data AccountDiff (v :: Detail) =
 -- GHC doesn't infer that our instances for 'Diff a v' cover all values of
 -- 'v'.
 instance ToJSON (AccountDiff 'Incremental) where
-  toJSON = genericToJSON ourDefaultOptions
+  toJSON = genericToJSON defaultOptions
 
 instance ToJSON (AccountDiff 'Eventual) where
-  toJSON = genericToJSON ourDefaultOptions
-
-ourDefaultOptions :: Options
-ourDefaultOptions = defaultOptions{omitNothingFields = True}
+  toJSON = genericToJSON defaultOptions
 
 -- | Generic type for holding various kinds of diff
 data family Diff a (v :: Detail)
