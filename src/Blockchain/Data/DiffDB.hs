@@ -21,14 +21,15 @@ import Blockchain.SHA
 
 import Control.Monad.Trans.Resource
 
+import Data.Map (Map)
 import qualified Data.Map as Map
 
 type SqlDbM m = SQL.SqlPersistT m
 
 sqlDiff :: (HasSQLDB m, HasCodeDB m, HasStateDB m, HasHashDB m, MonadResource m, MonadBaseControl IO m)=>
-           Integer -> SHA -> StateRoot -> StateRoot -> m ()
-sqlDiff blockNumber blockHash oldRoot newRoot = do
-  stateDiffs <- stateDiff blockNumber blockHash oldRoot newRoot 
+           Integer -> SHA -> Map SHA TXResult -> StateRoot -> StateRoot -> m ()
+sqlDiff blockNumber blockHash txResults oldRoot newRoot = do
+  stateDiffs <- stateDiff blockNumber blockHash txResults oldRoot newRoot 
   commitSqlDiffs stateDiffs
 
 commitSqlDiffs :: (HasStateDB m, HasHashDB m, HasCodeDB m, HasSQLDB m, MonadResource m, MonadBaseControl IO m)=>
