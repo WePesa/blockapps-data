@@ -54,6 +54,7 @@ createAccount blockNumber address diff = do
       addressStateRefBalance = getField (theError "balance") $ balance diff,
       addressStateRefContractRoot = getField (theError "contractRoot") $ contractRoot diff,
       addressStateRefCode = getField (theError "code") $ code diff,
+      addressStateRefCodeHash = codeHash diff,
       addressStateRefLatestBlockDataRefNumber = blockNumber
       }
     makeIncremental (Value x) = Create{newValue = x}
