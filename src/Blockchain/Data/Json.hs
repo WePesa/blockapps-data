@@ -314,14 +314,14 @@ bdrToBdrPrime x = BlockDataRef' x
 data AddressStateRef' = AddressStateRef' AddressStateRef String deriving (Eq, Show)
 
 instance ToJSON AddressStateRef' where
-    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c bNum) next) = 
+    toJSON (AddressStateRef' (AddressStateRef (Address x) n b cr c ch bNum) next) = 
         object ["next" .= next, "kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
-        "contractRoot" .= cr, "code" .= c, "latestBlockNum" .= bNum]
+        "contractRoot" .= cr, "code" .= c, "codeHash" .= ch, "latestBlockNum" .= bNum]
 
 instance ToJSON AddressStateRef where
-    toJSON (AddressStateRef (Address x) n b cr c bNum) = 
+    toJSON (AddressStateRef (Address x) n b cr c ch bNum) = 
         object ["kind" .= ("AddressStateRef" :: String), "address" .= (showHex x ""), "nonce" .= n, "balance" .= show b, 
-        "contractRoot" .= cr, "code" .= c, "latestBlockNum" .= bNum]
+        "contractRoot" .= cr, "code" .= c, "codeHash" .= ch, "latestBlockNum" .= bNum]
 
 instance FromJSON AddressStateRef' where
     parseJSON (Object s) = do
@@ -335,6 +335,7 @@ instance FromJSON AddressStateRef' where
                 <*> (read <$> (s .: "balance"))
                 <*> s .: "contractRoot"
                 <*> s .: "code"
+                <*> s .: "codeHash"
                 <*> s .: "latestBlockNum"
               )
     parseJSON _ = fail "JSON not an object"
