@@ -70,9 +70,9 @@ instance ToJSON RawTransaction' where
 instance FromJSON RawTransaction' where
     parseJSON (Object t) = do
       fa <- fmap (fst . head . readHex) (t .: "from")
-      tnon  <- fmap read (t .: "nonce")
-      tgp <- fmap read (t .: "gasPrice")
-      tgl <- fmap read (t .: "gasLimit")
+      tnon  <- (t .: "nonce")
+      tgp <- (t .: "gasPrice")
+      tgl <- (t .: "gasLimit")
       tto <- fmap (fmap $ Address . fst . head . readHex) (t .:? "to")
       tval <- fmap read (t .: "value")
       tcd <- fmap (fst .  B16.decode . T.encodeUtf8 ) (t .: "codeOrData")
@@ -208,7 +208,7 @@ instance FromJSON Transaction' where
       tnon <- (t .: "nonce")
       tgp <- (t .: "gasPrice")
       tgl <- (t .: "gasLimit")
-      tval <- (t .: "value")
+      tval <- fmap read (t .: "value") 
       tr <- (t .: "r")
       ts <- (t .: "s")
       tv <- (t .: "v")
@@ -333,8 +333,8 @@ instance FromJSON AddressStateRef' where
                 <$> Address . fst . head . readHex <$> s .: "address"
                 <*> s .: "nonce"
                 <*> (read <$> (s .: "balance"))
-                <*> s .: "contractRoot"
-                <*> s .: "code"
+                <*> (s .: "contractRoot")
+                <*> (s .: "code")
                 <*> s .: "latestBlockNum"
               )
     parseJSON _ = fail "JSON not an object"
