@@ -89,6 +89,7 @@ instance Binary Address where
     let byteString = B.pack bytes
     return (Address $ fromInteger $ byteString2Integer byteString)
 
+
 prvKey2Address::PrvKey->Address
 prvKey2Address prvKey =
   Address $ fromInteger $ byteString2Integer $ C.hash 256 $ BL.toStrict $ encode x `BL.append` encode y
