@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 --TODO : Take this next line out
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -30,10 +31,12 @@ import Numeric
 import Data.Word
 import Data.Maybe
 
+import GHC.Generics
+
 jsonBlk :: (ToJSON a, Monad m) => a -> m Value
 jsonBlk a = return . toJSON $ a
 
-data RawTransaction' = RawTransaction' RawTransaction String deriving (Eq, Show)
+data RawTransaction' = RawTransaction' RawTransaction String deriving (Eq, Show, Generic)
 
 {- fix these later -}
 instance FromJSON Code

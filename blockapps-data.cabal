@@ -27,10 +27,12 @@ library
                  , binary
                  , blockapps-util
                  , bytestring
+                 , clock
                  , containers
                  , crypto-pubkey-types
                  , cryptohash
                  , data-default
+                 , deepseq
                  , directory
                  , esqueleto
                  , ethereum-encryption

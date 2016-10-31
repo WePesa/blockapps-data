@@ -91,7 +91,7 @@ RawTransaction
     txHash SHA
     origin TXOrigin
     UniqueTXHash txHash
-    deriving Show Read Eq    
+    deriving Show Read Eq Generic
 
 Storage json
     addressStateRefId AddressStateRefId
