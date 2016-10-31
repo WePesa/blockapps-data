@@ -61,6 +61,16 @@ import Blockchain.Util
 import Network.Haskoin.Internals hiding (Address)
 import Blockchain.ExtendedECDSA
 
+import Control.DeepSeq
+import System.Clock
+
+instance NFData Address
+instance NFData Code
+instance NFData SHA
+instance NFData TXOrigin
+instance NFData Transaction
+instance NFData RawTransaction
+
 
 rawTX2TX :: RawTransaction -> Transaction
 rawTX2TX (RawTransaction _ _ nonce' gp gl (Just to') val dat r s v _ _ _) = (MessageTX nonce' gp gl to' val dat r s v)
@@ -80,12 +90,15 @@ tx2RawTXAndTime origin tx = do
   time <- liftIO getCurrentTime
   return $ txAndTime2RawTX origin tx (-1) time
 
-insertTXIfNew::HasSQLDB m=>TXOrigin->Maybe Integer->[Transaction]->m ()
+insertTXIfNew::HasSQLDB m=>TXOrigin->Maybe Integer->[Transaction]->m Integer
 insertTXIfNew origin blockNum txs = do
   time <- liftIO getCurrentTime
+  beforeECRecover <- liftIO $ getTime Realtime
   let rawTXs =
         map (\tx -> txAndTime2RawTX origin tx (fromMaybe (-1) blockNum) time) txs
+  afterECRecover <- rawTXs `deepseq` (liftIO $ getTime Realtime)
   insertRawTXIfNew $ map id rawTXs
+  return $ timeSpecAsNanoSecs $ afterECRecover - beforeECRecover
 
 insertTXIfNew'::(MonadBaseControl IO m, MonadIO m)=>
                 TXOrigin->Maybe Integer->[Transaction]->ReaderT SQL.SqlBackend m ()
