@@ -46,13 +46,15 @@ import qualified Database.Persist.Postgresql as SQL
 import Numeric
 
 import Blockchain.Data.Address
-import Blockchain.Data.TXOrigin
 import Blockchain.Data.Code
 import Blockchain.Data.DataDefs
 import Blockchain.Data.RawTransaction
 import Blockchain.Data.RLP
 import Blockchain.Data.TransactionDef
+import Blockchain.Data.TXOrigin
 import Blockchain.DB.SQLDB
+import Blockchain.EthConf
+import Blockchain.FastECRecover
 import Blockchain.SHA
 import Blockchain.Util
 
@@ -161,11 +163,13 @@ createContractCreationTX n gp gl val init' prvKey = do
 -}
 whoSignedThisTransaction::Transaction->Maybe Address -- Signatures can be malformed, hence the Maybe
 whoSignedThisTransaction t = 
-    fmap pubKey2Address $ getPubKeyFromSignature xSignature theHash
+    fmap pubKey2Address $ getPubKeyFromSignature' xSignature theHash
         where
           xSignature = ExtendedSignature (Signature (fromInteger $ transactionR t) (fromInteger $ transactionS t)) (0x1c == transactionV t)
           SHA theHash = hash $ rlpSerialize $ partialRLPEncode t
-
+          getPubKeyFromSignature' = if (fastECRecover $ generalConfig ethConf)
+                                    then getPubKeyFromSignature_fast
+                                    else getPubKeyFromSignature
 
 isMessageTX::Transaction->Bool
 isMessageTX MessageTX{} = True

@@ -35,6 +35,7 @@ library
                  , esqueleto
                  , ethereum-encryption
                  , ethereum-rlp
+                 , fast-ecrecover
                  , filepath
                  , haskoin
                  , lens
