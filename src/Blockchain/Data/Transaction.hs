@@ -31,7 +31,8 @@ module Blockchain.Data.Transaction (
   isMessageTX,
   isContractCreationTX,
   whoSignedThisTransaction,
-  transactionHash
+  transactionHash,
+  partialTransactionHash
   ) where
 
 import Control.Monad.IO.Class
@@ -113,7 +114,6 @@ insertTXIfNew' origin blockNum txs = do
 addLeadingZerosTo64::String->String
 addLeadingZerosTo64 x = replicate (64 - length x) '0' ++ x
 
-
 createMessageTX::MonadIO m=>Integer->Integer->Integer->Address->Integer->B.ByteString->PrvKey->SecretT m Transaction
 createMessageTX n gp gl to' val theData prvKey = do
   let unsignedTX = MessageTX {
@@ -127,7 +127,7 @@ createMessageTX n gp gl to' val theData prvKey = do
                      transactionS = 0,
                      transactionV = 0
                    }
-  let SHA theHash = hash $ rlpSerialize $ partialRLPEncode unsignedTX
+  let SHA theHash = partialTransactionHash unsignedTX
   ExtendedSignature signature yIsOdd <- extSignMsg theHash prvKey
   return 
     unsignedTX {
@@ -155,7 +155,7 @@ createContractCreationTX n gp gl val init' prvKey = do
                      transactionV = 0
                    }
 
-  let SHA theHash = hash $ rlpSerialize $ partialRLPEncode unsignedTX
+  let SHA theHash = partialTransactionHash unsignedTX
   ExtendedSignature signature yIsOdd <- extSignMsg theHash prvKey
   return 
     unsignedTX {
@@ -179,7 +179,7 @@ whoSignedThisTransaction t =
     fmap pubKey2Address $ getPubKeyFromSignature' xSignature theHash
         where
           xSignature = ExtendedSignature (Signature (fromInteger $ transactionR t) (fromInteger $ transactionS t)) (0x1c == transactionV t)
-          SHA theHash = hash $ rlpSerialize $ partialRLPEncode t
+          SHA theHash = partialTransactionHash t
           getPubKeyFromSignature' = if (fastECRecover $ generalConfig ethConf)
                                     then getPubKeyFromSignature_fast
                                     else getPubKeyFromSignature
@@ -195,3 +195,6 @@ isContractCreationTX _ = False
 
 transactionHash::Transaction->SHA
 transactionHash = hash . rlpSerialize . rlpEncode
+
+partialTransactionHash::Transaction->SHA
+partialTransactionHash = hash . rlpSerialize . partialRLPEncode

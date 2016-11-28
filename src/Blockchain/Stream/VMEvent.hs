@@ -19,6 +19,7 @@ module Blockchain.Stream.VMEvent (
   fetchVMEventsIO,
   fetchVMEventsOneIO,
   fetchLastVMEvents,
+  fetchVMEventsFromTopic,
   getBestKafkaBlockNumber
 ) where 
 
@@ -77,7 +78,10 @@ produceVMEvents vmEvents = do
      return offset
 
 fetchVMEvents::Offset->Kafka [VMEvent]
-fetchVMEvents = fmap (map bytesToVMEvent) . fetchBytes (lookupTopic "block")
+fetchVMEvents = fetchVMEventsFromTopic "block"
+
+fetchVMEventsFromTopic :: TopicLabel-> Offset -> Kafka [VMEvent]
+fetchVMEventsFromTopic topic offset = (map bytesToVMEvent) <$> fetchBytes (lookupTopic topic) offset
 
 fetchVMEventsRange::Offset->Offset->Kafka [VMEvent]
 fetchVMEventsRange lower upper = do
