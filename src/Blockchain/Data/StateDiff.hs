@@ -42,6 +42,10 @@ import qualified Data.NibbleString as N
 
 import GHC.Generics
 
+import HFlags
+
+defineFlag "codeInStateDiff" False "include the code of newly created accounts in their state diffs"
+
 -- | Describes all the changes that have occurred in the blockchain
 -- database in a given block.
 data StateDiff = 
@@ -228,7 +232,7 @@ eventualAccountState
       nonce = Just $ Value addressStateNonce,
       balance = Just $ Value addressStateBalance,
       contractRoot = Just $ Value addressStateContractRoot,
-      code = Just $ Value code,
+      code = if flags_codeInStateDiff then Just $ Value code else Nothing,
       codeHash = addressStateCodeHash,
       storage
       }
