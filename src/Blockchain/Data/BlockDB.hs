@@ -16,6 +16,7 @@ module Blockchain.Data.BlockDB (
   Block(..),
   BlockData(..),
   blockHash,
+  blockHash',
   getBlock,
   putBlocks,
   nextDifficulty,
@@ -288,7 +289,10 @@ instance RLPSerializable BlockData where
       ]
 
 blockHash::Block->SHA
-blockHash (Block info _ _) = hash . rlpSerialize . rlpEncode $ info
+blockHash (Block info _ _) = blockHash' info
+
+blockHash' :: BlockData -> SHA
+blockHash' = hash . rlpSerialize . rlpEncode
 
 instance Format BlockData where
   format b = 
