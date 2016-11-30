@@ -70,7 +70,6 @@ AddressStateRef
     nonce Integer sqltype=numeric(1000,0)
     balance Integer sqltype=numeric(1000,0)
     contractRoot StateRoot
-    code BS.ByteString
     codeHash SHA
     latestBlockDataRefNumber Integer
     deriving Show Read Eq

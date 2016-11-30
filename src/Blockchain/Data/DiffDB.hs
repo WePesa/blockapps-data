@@ -53,7 +53,6 @@ createAccount blockNumber address diff = do
       addressStateRefNonce = getField (theError "nonce") $ nonce diff,
       addressStateRefBalance = getField (theError "balance") $ balance diff,
       addressStateRefContractRoot = getField (theError "contractRoot") $ contractRoot diff,
-      addressStateRefCode = getField (theError "code") $ code diff,
       addressStateRefCodeHash = codeHash diff,
       addressStateRefLatestBlockDataRefNumber = blockNumber
       }
