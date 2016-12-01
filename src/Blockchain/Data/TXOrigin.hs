@@ -13,6 +13,7 @@ import Data.Aeson
 import Blockchain.Data.PersistTypes ()
 import Blockchain.MiscJSON ()
 
+import Blockchain.Format
 import Blockchain.SHA
 
 import qualified GHC.Word as GW
@@ -37,3 +38,6 @@ instance Binary TXOrigin where
             1 -> return API
             2 -> BlockHash  <$> get
             3 -> PeerString <$> get
+
+instance Format TXOrigin where
+    format = show
