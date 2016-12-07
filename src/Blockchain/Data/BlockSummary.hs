@@ -2,7 +2,7 @@
 
 module Blockchain.Data.BlockSummary (
     BlockSummary(..),
-    blockToBSum
+    blockHeaderToBSum
   ) where
 
 import Data.Time
@@ -23,16 +23,16 @@ data BlockSummary = BlockSummary {
   bSumNumber::Integer
   }
 
-blockToBSum::Block->BlockSummary
-blockToBSum b = 
+blockHeaderToBSum::BlockData->BlockSummary
+blockHeaderToBSum b =
     BlockSummary {
-      bSumParentHash = blockDataParentHash $ blockBlockData b,
-      bSumDifficulty = blockDataDifficulty $ blockBlockData b,
+      bSumParentHash = blockDataParentHash b,
+      bSumDifficulty = blockDataDifficulty b,
       bSumTotalDifficulty = 0, -- blockDataTotalDifficulty $ blockBlockData b,
-      bSumStateRoot = blockDataStateRoot $ blockBlockData b,
-      bSumGasLimit = blockDataGasLimit $ blockBlockData b,
-      bSumTimestamp = blockDataTimestamp $ blockBlockData b,
-      bSumNumber = blockDataNumber $ blockBlockData b
+      bSumStateRoot = blockDataStateRoot b,
+      bSumGasLimit = blockDataGasLimit b,
+      bSumTimestamp = blockDataTimestamp b,
+      bSumNumber = blockDataNumber b
     }
 
 instance RLPSerializable BlockSummary where

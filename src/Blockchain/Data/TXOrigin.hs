@@ -42,4 +42,8 @@ instance Binary TXOrigin where
             4 -> return Quarry
 
 instance Format TXOrigin where
-    format = show
+    format Direct          = "Direct"
+    format API             = "API"
+    format Quarry          = "Quarry"
+    format (PeerString p)  = "PeerString " ++ (show p)
+    format (BlockHash sha) = "BlockHash " ++ (format sha)

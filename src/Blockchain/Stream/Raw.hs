@@ -26,8 +26,13 @@ produceBytes topic items = do
   return ()
 
 fetchBytes::TopicName->Offset->Kafka [B.ByteString]
-fetchBytes topic offset =
-  fmap (map tamPayload . fetchMessages) $ fetch offset 0 topic
+fetchBytes topic offset = do
+  fetched <- fetch offset 0 topic
+  let datas = (map tamPayload' . fetchMessages) $ fetched
+  return datas
+
+tamPayload' :: TopicAndMessage -> B.ByteString
+tamPayload' = foldOf (tamMessage . payload)
 
 fetchBytesIO::TopicName->Offset->IO (Maybe [B.ByteString])
 fetchBytesIO topic offset = do
