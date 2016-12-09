@@ -33,7 +33,8 @@ wei = 1
 
 --------
 
-minimumDifficulty=131072
+-- ethereum mainnet is 131072
+minimumDifficulty = minBlockDifficulty $ blockConfig $ ethConf
 
 difficultyDurationLimit testnet =if testnet then 8 else (blockTime $ blockConfig ethConf)
 
