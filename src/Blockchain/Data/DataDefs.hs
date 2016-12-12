@@ -18,9 +18,9 @@ import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Quasi
 
-import Crypto.Types.PubKey.ECC
+--import Crypto.Types.PubKey.ECC
 
-import Data.Text
+--import Data.Text
 import Data.Time
 
 import Blockchain.Data.Address
