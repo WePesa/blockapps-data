@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Blockchain.Data.StateDiff (
   StateDiff(..),
-  TXResult(..),
+--  TXResult(..),
   AccountDiff(..),
   Diff(..),
   Detail(..),
@@ -52,8 +52,7 @@ data StateDiff =
     createdAccounts :: Map Address (AccountDiff 'Eventual),
     -- | The 'Eventual value is the pre-deletion state of the contract
     deletedAccounts :: Map Address (AccountDiff 'Eventual),
-    updatedAccounts :: Map Address (AccountDiff 'Incremental),
-    transactionResults :: Map SHA TXResult
+    updatedAccounts :: Map Address (AccountDiff 'Incremental)
     }
     deriving (Generic)
 
@@ -68,6 +67,7 @@ instance (ToJSON a) => ToJSON (Map SHA a) where
 
 instance ToJSON StateDiff
 
+{-
 data TXResult =
   TXResult {
     message :: String,
@@ -78,6 +78,7 @@ data TXResult =
   deriving (Generic)
 
 instance ToJSON TXResult 
+-}
 
 -- | Describes all the changes to a particular account.  The address is not
 -- recorded; it appears as the key in the map in the 'StateDiff'
@@ -165,8 +166,8 @@ instance Detailed (Diff SHA) where
   incrementalToEventual x = Value $ newValue x
 
 stateDiff :: (HasStateDB m, HasCodeDB m, HasHashDB m, MonadResource m) =>
-             Integer -> SHA -> Map SHA TXResult -> StateRoot -> StateRoot -> m StateDiff
-stateDiff blockNumber blockHash transactionResults oldRoot newRoot = do
+             Integer -> SHA -> StateRoot -> StateRoot -> m StateDiff
+stateDiff blockNumber blockHash oldRoot newRoot = do
   db <- getStateDB
   diffs <- Diff.dbDiff db oldRoot newRoot
   collectModes diffs $
@@ -176,8 +177,7 @@ stateDiff blockNumber blockHash transactionResults oldRoot newRoot = do
         blockHash,
         createdAccounts,
         deletedAccounts,
-        updatedAccounts,
-        transactionResults
+        updatedAccounts
         }
 
   where
