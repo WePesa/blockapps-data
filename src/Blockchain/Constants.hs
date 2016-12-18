@@ -6,6 +6,9 @@ import System.FilePath
 
 import Blockchain.EthConf
 
+--TODO choose a better Identifier string, add version number
+stratoVersionString="Ethereum(G)/v?.?.?/linux/Haskell"
+
 ethVersion::Integer
 ethVersion=62
 shhVersion::Integer
